@@ -47,6 +47,14 @@
 </style>
 <style>
 [hidden]{display:none!important}
+/* Rampa secuencial (un solo tono, validada): claro -> oscuro en modo claro; se invierte en oscuro */
+:root{--h0:#F1EEE8;--h1:#E3A197;--h2:#CC6A5D;--h3:#A63D32;--h4:#7A2020}
+@media (prefers-color-scheme:dark){:root{--h0:rgb(255 255 255 / .05);--h1:#9B3E33;--h2:#C25B4D;--h3:#E0826F;--h4:#F7B9A8}}
+.celda{height:22px;border-radius:5px;background:var(--h0);position:relative;transition:transform .12s}
+.celda[data-n="1"]{background:var(--h1)}.celda[data-n="2"]{background:var(--h2)}.celda[data-n="3"]{background:var(--h3)}.celda[data-n="4"]{background:var(--h4)}
+.celda.promo{box-shadow:inset 0 0 0 2px #FFCA00}
+.celda:hover,.celda[aria-pressed="true"]{transform:scale(1.12);z-index:1;outline:2px solid currentColor;outline-offset:1px}
+.celda-sw{width:18px;height:12px;border-radius:3px;display:inline-block}
 .sheet{transition:transform .28s cubic-bezier(.2,.8,.2,1)}
 .sheet-wrap[aria-hidden="true"] .sheet{transform:translateY(105%)}
 .sheet-wrap[aria-hidden="true"]{pointer-events:none;opacity:0}
@@ -86,6 +94,34 @@
       <div class="rounded-3xl bg-white p-4 ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10"><p class="text-[11px] font-bold uppercase tracking-wider text-stone-500">Pedidos</p><p id="k-ped" class="font-display mt-1 text-3xl font-extrabold tabular-nums">0</p></div>
       <div class="rounded-3xl bg-white p-4 ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10"><p class="text-[11px] font-bold uppercase tracking-wider text-stone-500">Canjeados</p><p id="k-can" class="font-display mt-1 text-3xl font-extrabold tabular-nums">0</p></div>
     </div>
+
+    <!-- Comparación semanal -->
+    <section class="mt-6 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10" aria-labelledby="t-sem">
+      <h2 id="t-sem" class="font-display text-xl font-extrabold">Esta semana</h2>
+      <p class="text-xs font-semibold text-stone-500 dark:text-stone-400">Últimos 7 días comparados con los 7 anteriores</p>
+      <div id="sem" class="mt-3 grid gap-2"></div>
+    </section>
+
+    <!-- Mapa de calor -->
+    <section class="mt-4 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10" aria-labelledby="t-calor">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 id="t-calor" class="font-display text-xl font-extrabold">¿Cuándo se canjea?</h2>
+        <div class="flex gap-1" role="group" aria-label="Período">
+          <button type="button" class="pill !px-2.5 !py-1 text-xs" data-periodo="7">7 días</button>
+          <button type="button" class="pill !px-2.5 !py-1 text-xs" data-periodo="28" aria-pressed="true">4 semanas</button>
+          <button type="button" class="pill !px-2.5 !py-1 text-xs" data-periodo="90">3 meses</button>
+        </div>
+      </div>
+      <p id="calor-resumen" class="mt-2 text-sm text-stone-600 dark:text-stone-300"></p>
+      <div id="calor" class="mt-3" role="grid" aria-label="Canjes por día y hora"></div>
+      <p id="calor-detalle" class="mt-3 min-h-5 text-center text-sm font-semibold text-stone-700 dark:text-stone-200" aria-live="polite">Tocá un cuadro para ver el detalle.</p>
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 pt-3 text-xs font-semibold text-stone-500 dark:border-white/10 dark:text-stone-400">
+        <span class="inline-flex items-center gap-1.5">Menos
+          <span class="celda-sw" style="background:var(--h1)"></span><span class="celda-sw" style="background:var(--h2)"></span><span class="celda-sw" style="background:var(--h3)"></span><span class="celda-sw" style="background:var(--h4)"></span>
+          Más canjes</span>
+        <span class="inline-flex items-center gap-1.5"><span class="celda-sw" style="background:var(--h0);box-shadow:inset 0 0 0 2px #FFCA00"></span>Horario con promo</span>
+      </div>
+    </section>
 
     <div class="mt-6 flex items-center justify-between gap-3">
       <h2 class="font-display text-2xl font-extrabold">Cupones</h2>
@@ -258,13 +294,96 @@ $('f-pin').addEventListener('submit', async e => {
 $('salir').onclick = () => { PIN = ''; store.set(''); mostrar(); };
 function sinPin(r){ if(r && r.error === 'PIN incorrecto'){ PIN = ''; store.set(''); mostrar('El PIN cambió. Ingresalo de nuevo.'); return true; } return false; }
 
+// ---------- KPIs ----------
+let periodo = 28, kpis = null;
+const NOMBRE_DIA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+async function cargarKpis(){
+  try{
+    const r = await rpc('admin_kpis', {p_pin: PIN, p_dias: periodo});
+    if(sinPin(r)) return;
+    kpis = r; pintarSemana(); pintarCalor();
+  }catch(e){ $('sem').innerHTML = `<p class="text-sm font-semibold text-red-700">${esc(e.message)}</p>`; }
+}
+function delta(act, ant, unidad){
+  if(act === null || act === undefined) return '<span class="text-xs font-semibold text-stone-400">sin datos aún</span>';
+  if(ant === null || ant === undefined) return '<span class="text-xs font-semibold text-stone-400">sin datos para comparar</span>';
+  const d = Math.round((act - ant) * 10) / 10;
+  if(d === 0) return `<span class="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 text-xs font-extrabold text-stone-600 dark:bg-white/10 dark:text-stone-300">= igual</span>`;
+  const sube = d > 0, txt = (sube ? '+' : '−') + Math.abs(d).toLocaleString('es-AR') + (unidad || '');
+  return `<span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-extrabold ${sube ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-400/10 dark:text-red-300'}" aria-label="${sube ? 'Sube' : 'Baja'} ${txt}">${sube ? '▲' : '▼'} ${txt}</span>`;
+}
+function pintarSemana(){
+  const a = kpis.semanas.actual, b = kpis.semanas.anterior;
+  const fila = (titulo, ayuda, val, d, prev) => `
+    <div class="flex items-center gap-3 rounded-2xl bg-stone-50 px-4 py-3 dark:bg-white/5">
+      <div class="min-w-0 flex-1"><p class="font-bold">${titulo}</p><p class="text-xs text-stone-500 dark:text-stone-400">${ayuda}</p></div>
+      <div class="text-right"><p class="font-display text-2xl font-extrabold tabular-nums leading-none">${val}</p>
+      <div class="mt-1 flex items-center justify-end gap-1.5">${d}<span class="text-[11px] text-stone-400 tabular-nums">antes ${prev}</span></div></div>
+    </div>`;
+  const pct = v => v === null || v === undefined ? '—' : v.toLocaleString('es-AR') + '%';
+  $('sem').innerHTML =
+    fila('Canjes', 'Cupones usados en el local', a.canjes, delta(a.canjes, b.canjes), b.canjes) +
+    fila('Clientes nuevos', 'Cuentas creadas', a.clientes_nuevos, delta(a.clientes_nuevos, b.clientes_nuevos), b.clientes_nuevos) +
+    fila('Tasa de canje', `De ${a.pedidos} códigos pedidos, ${a.pedidos_usados} se usaron`, pct(a.tasa), delta(a.tasa, b.tasa, ' pts'), pct(b.tasa));
+}
+// Celdas con promo: unión de las franjas horarias de los cupones activos
+function celdasPromo(){
+  const set = new Set();
+  cupones.filter(c => c.activo && c.hora_desde && c.hora_hasta).forEach(c => {
+    const dias = c.dias || [0,1,2,3,4,5,6];
+    const d = +c.hora_desde.slice(0, 2), h = +c.hora_hasta.slice(0, 2) + (c.hora_hasta.slice(3) !== '00' ? 1 : 0);
+    dias.forEach(dia => {
+      if(d < h) for(let x = d; x < h; x++) set.add(dia + '-' + x);
+      else { for(let x = d; x < 24; x++) set.add(dia + '-' + x); for(let x = 0; x < h; x++) set.add(((dia + 1) % 7) + '-' + x); }
+    });
+  });
+  return set;
+}
+function pintarCalor(){
+  if(!kpis) return;
+  const m = {}; let max = 0, horas = [];
+  kpis.calor.forEach(([dia, hora, n]) => { m[dia + '-' + hora] = n; max = Math.max(max, n); horas.push(hora); });
+  const promo = celdasPromo();
+  promo.forEach(k => horas.push(+k.split('-')[1]));
+  const h0 = Math.min(7, ...horas), h1 = Math.max(22, ...horas);
+  const orden = [1,2,3,4,5,6,0];
+  let html = `<div class="grid gap-[3px]" style="grid-template-columns:2.4rem repeat(7,minmax(0,1fr))">
+    <span></span>${orden.map(d => `<span class="pb-1 text-center text-[11px] font-extrabold text-stone-500 dark:text-stone-400">${NOMBRES[d]}</span>`).join('')}`;
+  for(let h = h0; h <= h1; h++){
+    html += `<span class="pr-1 text-right text-[11px] font-semibold leading-[22px] tabular-nums text-stone-500 dark:text-stone-400">${h} h</span>`;
+    html += orden.map(d => {
+      const k = d + '-' + h, n = m[k] || 0, nivel = n ? Math.max(1, Math.ceil(n / max * 4)) : 0, p = promo.has(k);
+      const txt = `${NOMBRE_DIA[d]} ${h} h: ${n} ${n === 1 ? 'canje' : 'canjes'}${p ? ' · horario con promo' : ''}`;
+      return `<button type="button" class="celda${p ? ' promo' : ''}" data-n="${nivel}" data-k="${k}" data-txt="${txt}" aria-label="${txt}" title="${txt}"></button>`;
+    }).join('');
+  }
+  $('calor').innerHTML = html + '</div>';
+  // Resumen: qué parte de los canjes cayó dentro de las franjas con promo
+  const total = kpis.total_calor, enPromo = kpis.calor.reduce((s, [d, h, n]) => s + (promo.has(d + '-' + h) ? n : 0), 0);
+  const rango = periodo === 7 ? 'los últimos 7 días' : periodo === 28 ? 'las últimas 4 semanas' : 'los últimos 3 meses';
+  $('calor-resumen').innerHTML = !total
+    ? `Todavía no hay canjes en ${rango}. Cuando el mozo confirme cupones, vas a ver acá en qué días y horarios se usan.`
+    : `En ${rango} hubo <b class="tabular-nums">${total}</b> ${total === 1 ? 'canje' : 'canjes'}.` + (promo.size ? ` <b class="tabular-nums">${Math.round(enPromo / total * 100)}%</b> cayó en horarios con promo <span class="whitespace-nowrap">(recuadro amarillo)</span>.` : '');
+  $('calor-detalle').textContent = 'Tocá un cuadro para ver el detalle.';
+}
+$('calor').addEventListener('click', e => {
+  const c = e.target.closest('.celda'); if(!c) return;
+  document.querySelectorAll('.celda[aria-pressed="true"]').forEach(x => x.removeAttribute('aria-pressed'));
+  c.setAttribute('aria-pressed', 'true'); $('calor-detalle').textContent = c.dataset.txt;
+});
+document.querySelectorAll('[data-periodo]').forEach(b => b.addEventListener('click', () => {
+  periodo = +b.dataset.periodo;
+  document.querySelectorAll('[data-periodo]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  cargarKpis();
+}));
+
 // ---------- Lista ----------
 async function cargar(){
   $('lista').innerHTML = '<div class="h-24 animate-pulse rounded-3xl bg-stone-200 dark:bg-white/5"></div>'.repeat(3);
   try{
     const r = await rpc('admin_listar', {p_pin: PIN});
     if(sinPin(r)) return;
-    cupones = r.cupones || []; pintar();
+    cupones = r.cupones || []; pintar(); cargarKpis();
   }catch(e){ $('lista').innerHTML = `<p class="rounded-3xl bg-red-50 p-4 text-sm font-semibold text-red-700">${esc(e.message)}</p>`; }
 }
 function pintar(){
@@ -272,6 +391,7 @@ function pintar(){
   $('k-act').textContent = cupones.filter(c => c.activo).length;
   $('k-ped').textContent = cupones.reduce((n, c) => n + c.pedidos, 0);
   $('k-can').textContent = cupones.reduce((n, c) => n + c.canjes, 0);
+  if(kpis) pintarCalor();
   $('lista').innerHTML = cupones.length ? cupones.map(c => `
     <article class="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10 ${c.activo ? '' : 'opacity-60'}">
       <div class="flex gap-3.5">
