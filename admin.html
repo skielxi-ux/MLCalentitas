@@ -152,7 +152,7 @@
       </div>
       <div>
         <span class="lbl">Foto de fondo</span>
-        <div id="foto-prev" class="relative grid aspect-[16/10] place-items-center overflow-hidden rounded-3xl bg-stone-100 text-center text-sm text-stone-500 dark:bg-white/5 dark:text-stone-400"></div>
+        <div id="foto-prev"></div>
         <div class="mt-2 grid grid-cols-2 gap-2">
           <label class="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-2xl bg-mlc-maroon py-3 text-sm font-extrabold text-mlc-yellow transition active:scale-[.98]">
             <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"/><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"/></svg>
@@ -161,7 +161,7 @@
           </label>
           <button type="button" id="foto-quitar" class="rounded-2xl border-2 border-stone-200 py-3 text-sm font-bold text-stone-600 transition dark:border-white/10 dark:text-stone-300">Sin foto</button>
         </div>
-        <p class="hint">Desde el celular podés sacar una foto en el momento. Se achica sola antes de subirla.</p>
+        <p class="hint"><b>Tamaño ideal:</b> foto vertical de 1080 × 1350 px (o cuadrada de 1200 × 1200), con el producto en el centro y un poco de aire alrededor. Mínimo 800 px de ancho. Desde el celular podés sacarla en el momento; se achica sola antes de subirla.</p>
         <p class="mt-3 text-xs font-bold uppercase tracking-wider text-stone-500">O elegí una de muestra</p>
         <div id="galeria" class="mt-2 grid grid-cols-4 gap-2"></div>
       </div>
@@ -510,12 +510,30 @@ function pintarEditor(){
   pintarFoto();
 }
 function pintarFoto(){
-  $('foto-prev').innerHTML = subiendo
-    ? '<div class="grid gap-2 justify-items-center"><svg class="size-7 animate-spin text-mlc-maroon dark:text-mlc-yellow" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".25" stroke-width="3"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg><span class="font-bold">Subiendo foto…</span></div>'
-    : foto
-    ? `<img src="${esc(foto)}" alt="Foto del cupón" class="absolute inset-0 size-full object-cover"><div class="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/70"></div>
-       <div class="absolute inset-x-4 bottom-3 text-left text-white [text-shadow:0_1px_10px_rgb(0_0_0_/_.5)]"><p class="font-display text-3xl font-extrabold leading-none">${esc($('c-etiqueta').value || 'Descuento')}</p><p class="mt-1 font-bold">${esc($('c-titulo').value || 'Título del cupón')}</p></div>`
-    : '<div class="grid gap-1 justify-items-center p-4"><span class="text-3xl">🖼️</span><span class="font-bold">Sin foto</span><span>La tarjeta se muestra con color de fondo.</span></div>';
+  const caja = 'grid place-items-center overflow-hidden rounded-2xl bg-stone-100 text-center text-sm text-stone-500 dark:bg-white/5 dark:text-stone-400';
+  if(subiendo){ $('foto-prev').innerHTML = `<div class="${caja} aspect-[16/10]"><div class="grid gap-2 justify-items-center"><svg class="size-7 animate-spin text-mlc-maroon dark:text-mlc-yellow" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".25" stroke-width="3"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg><span class="font-bold">Subiendo foto…</span></div></div>`; }
+  else if(!foto){ $('foto-prev').innerHTML = `<div class="${caja} aspect-[16/10]"><div class="grid gap-1 justify-items-center p-4"><span class="text-3xl">🖼️</span><span class="font-bold">Sin foto</span><span>La tarjeta se muestra con color de fondo.</span></div></div>`; }
+  else {
+    // Los dos recortes reales: tarjeta del carrusel (4:5, vertical) y cabecera del detalle (4:3)
+    const et = esc($('c-etiqueta').value || 'Descuento'), ti = esc($('c-titulo').value || 'Título del cupón');
+    $('foto-prev').innerHTML = `<div class="grid grid-cols-[4fr_5fr] items-end gap-2">
+      <figure><div class="relative aspect-[4/5] overflow-hidden rounded-2xl"><img src="${esc(foto)}" alt="" class="absolute inset-0 size-full object-cover"><div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/80"></div>
+        <div class="absolute inset-x-2.5 bottom-2.5 text-white [text-shadow:0_1px_8px_rgb(0_0_0_/_.5)]"><p class="font-display text-xl font-extrabold leading-none">${et}</p><p class="mt-0.5 text-xs font-bold leading-tight">${ti}</p></div></div>
+        <figcaption class="mt-1 text-center text-[11px] font-bold text-stone-500">Carrusel</figcaption></figure>
+      <figure><div class="relative aspect-[4/3] overflow-hidden rounded-2xl"><img src="${esc(foto)}" alt="" class="absolute inset-0 size-full object-cover"></div>
+        <figcaption class="mt-1 text-center text-[11px] font-bold text-stone-500">Detalle del cupón</figcaption></figure>
+    </div>
+    <p id="foto-aviso" class="mt-2 hidden rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 dark:bg-amber-400/10 dark:text-amber-200"></p>`;
+    // Aviso si la foto es chica o muy apaisada (se va a cortar mucho en el carrusel)
+    const img = new Image();
+    img.onload = () => {
+      const av = $('foto-aviso'); if(!av) return; const msgs = [];
+      if(img.naturalWidth < 800) msgs.push(`La foto es chica (${img.naturalWidth} px de ancho): puede verse borrosa. Ideal 1080 px o más.`);
+      if(img.naturalWidth / img.naturalHeight > 1.4) msgs.push('La foto es muy horizontal: en el carrusel se cortan los costados. Mejor vertical o cuadrada.');
+      if(msgs.length){ av.textContent = '⚠️ ' + msgs.join(' '); av.classList.remove('hidden'); }
+    };
+    img.src = foto;
+  }
   $('galeria').innerHTML = GALERIA.map(u => `<button type="button" data-foto="${u}" aria-pressed="${u === foto}" aria-label="Usar esta foto" class="relative aspect-square overflow-hidden rounded-xl ring-offset-2 transition aria-pressed:ring-4 aria-pressed:ring-mlc-maroon dark:ring-offset-espresso-800 dark:aria-pressed:ring-mlc-yellow"><img src="${u.replace('w=900', 'w=200')}" alt="" loading="lazy" class="size-full object-cover"></button>`).join('');
   $('foto-quitar').disabled = !foto || subiendo;
   $('foto-quitar').classList.toggle('opacity-50', !foto || subiendo);
