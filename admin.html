@@ -115,6 +115,21 @@
         <input id="c-titulo" class="field" maxlength="60" placeholder="Ej: Café + medialuna">
       </div>
       <div>
+        <span class="lbl">Foto de fondo</span>
+        <div id="foto-prev" class="relative grid aspect-[16/10] place-items-center overflow-hidden rounded-3xl bg-stone-100 text-center text-sm text-stone-500 dark:bg-white/5 dark:text-stone-400"></div>
+        <div class="mt-2 grid grid-cols-2 gap-2">
+          <label class="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-2xl bg-mlc-maroon py-3 text-sm font-extrabold text-mlc-yellow transition active:scale-[.98]">
+            <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614Z"/><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5Z"/></svg>
+            <span id="foto-btn-t">Subir foto</span>
+            <input id="c-foto-file" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only">
+          </label>
+          <button type="button" id="foto-quitar" class="rounded-2xl border-2 border-stone-200 py-3 text-sm font-bold text-stone-600 transition dark:border-white/10 dark:text-stone-300">Sin foto</button>
+        </div>
+        <p class="hint">Desde el celular podés sacar una foto en el momento. Se achica sola antes de subirla.</p>
+        <p class="mt-3 text-xs font-bold uppercase tracking-wider text-stone-500">O elegí una de muestra</p>
+        <div id="galeria" class="mt-2 grid grid-cols-4 gap-2"></div>
+      </div>
+      <div>
         <label for="c-etiqueta" class="lbl">Descuento *</label>
         <input id="c-etiqueta" class="field" maxlength="16" placeholder="Ej: 20% OFF">
         <div class="mt-2 flex flex-wrap gap-1.5" id="sug-etiqueta"></div>
@@ -220,6 +235,9 @@ const DIAS = [[1,'L','Lunes'],[2,'M','Martes'],[3,'M','Miércoles'],[4,'J','Juev
 const NOMBRES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const EMOJIS = ['🥐','☕','🍰','🥤','🥪','🍊','🧁','🍩','🥯','🍪','🧃','🎉'];
 const SUGERIDOS = ['10% OFF','15% OFF','20% OFF','2x1','2do al 50%','$ 500 OFF'];
+const U = id => `https://images.unsplash.com/${id}?w=900&q=70&auto=format&fit=crop`;
+const GALERIA = ['photo-1712265964629-6cb2c90f9e48','photo-1550005399-c95f859c0fc7','photo-1760175445000-0e01e193d1cd','photo-1561497268-442ab83f3bbd',
+  'photo-1572897305697-f8adb93dae8f','photo-1505252585461-04db1eb84625','photo-1658238124280-5b0eb91ebd01','photo-1600271886742-f049cd451bba'].map(U);
 
 // ---------- Acceso ----------
 function mostrar(err){
@@ -257,7 +275,8 @@ function pintar(){
   $('lista').innerHTML = cupones.length ? cupones.map(c => `
     <article class="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10 ${c.activo ? '' : 'opacity-60'}">
       <div class="flex gap-3.5">
-        <div class="grid size-16 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-mlc-maroon to-[#5a1414] px-1 text-center font-display text-sm font-extrabold leading-tight text-mlc-yellow ${c.activo ? '' : 'grayscale'}">${esc(c.etiqueta)}</div>
+        <div class="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-mlc-maroon to-[#5a1414] px-1 text-center font-display text-sm font-extrabold leading-tight text-mlc-yellow ${c.activo ? '' : 'grayscale'}">
+          ${c.foto ? `<img src="${esc(c.foto.replace('w=900', 'w=200'))}" alt="" loading="lazy" class="absolute inset-0 size-full object-cover"><span class="absolute inset-0 bg-black/45"></span>` : ''}<span class="relative ${c.foto ? 'text-white' : ''}">${esc(c.etiqueta)}</span></div>
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-1.5">
             ${c.activo ? '<span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/20">Activo</span>' : '<span class="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-bold text-stone-500 ring-1 ring-stone-200 dark:bg-white/5 dark:ring-white/10">Pausado</span>'}
@@ -297,7 +316,7 @@ async function guardar(c){
 }
 
 // ---------- Editor ----------
-let dias = new Set(), emoji = '🥐', franja = false, activo = true, dest = false;
+let dias = new Set(), emoji = '🥐', franja = false, activo = true, dest = false, foto = null, subiendo = false;
 function horarioTexto(){
   const d = [...dias];
   let t;
@@ -326,13 +345,55 @@ function pintarEditor(){
   document.querySelectorAll('[data-franja]').forEach(b => b.setAttribute('aria-pressed', String(franja && b.dataset.franja === `${$('c-desde').value}-${$('c-hasta').value}`)));
   $('sw-activo').setAttribute('aria-checked', String(activo)); $('sw-dest').setAttribute('aria-checked', String(dest));
   $('resumen').textContent = horarioTexto();
+  pintarFoto();
 }
+function pintarFoto(){
+  $('foto-prev').innerHTML = subiendo
+    ? '<div class="grid gap-2 justify-items-center"><svg class="size-7 animate-spin text-mlc-maroon dark:text-mlc-yellow" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".25" stroke-width="3"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg><span class="font-bold">Subiendo foto…</span></div>'
+    : foto
+    ? `<img src="${esc(foto)}" alt="Foto del cupón" class="absolute inset-0 size-full object-cover"><div class="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/70"></div>
+       <div class="absolute inset-x-4 bottom-3 text-left text-white [text-shadow:0_1px_10px_rgb(0_0_0_/_.5)]"><p class="font-display text-3xl font-extrabold leading-none">${esc($('c-etiqueta').value || 'Descuento')}</p><p class="mt-1 font-bold">${esc($('c-titulo').value || 'Título del cupón')}</p></div>`
+    : '<div class="grid gap-1 justify-items-center p-4"><span class="text-3xl">🖼️</span><span class="font-bold">Sin foto</span><span>La tarjeta se muestra con color de fondo.</span></div>';
+  $('galeria').innerHTML = GALERIA.map(u => `<button type="button" data-foto="${u}" aria-pressed="${u === foto}" aria-label="Usar esta foto" class="relative aspect-square overflow-hidden rounded-xl ring-offset-2 transition aria-pressed:ring-4 aria-pressed:ring-mlc-maroon dark:ring-offset-espresso-800 dark:aria-pressed:ring-mlc-yellow"><img src="${u.replace('w=900', 'w=200')}" alt="" loading="lazy" class="size-full object-cover"></button>`).join('');
+  $('foto-quitar').disabled = !foto || subiendo;
+  $('foto-quitar').classList.toggle('opacity-50', !foto || subiendo);
+}
+['c-titulo', 'c-etiqueta'].forEach(id => $(id).addEventListener('input', () => { if(foto) pintarFoto(); }));
+
+// Achica la foto en el celular antes de subirla (máx. 1400 px, JPG)
+async function achicar(file){
+  const bmp = await createImageBitmap(file).catch(() => null);
+  if(!bmp) return file;
+  const k = Math.min(1, 1400 / Math.max(bmp.width, bmp.height));
+  const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * k); cv.height = Math.round(bmp.height * k);
+  cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+  return await new Promise(r => cv.toBlob(b => r(b || file), 'image/jpeg', 0.82));
+}
+$('c-foto-file').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = '';
+  if(!f) return;
+  if(!/^image\//.test(f.type)){ errorEditor('Elegí una imagen (JPG, PNG o WEBP).'); return; }
+  $('ed-err').classList.add('hidden'); subiendo = true; pintarFoto();
+  try{
+    const blob = await achicar(f);
+    if(blob.size > 3 * 1024 * 1024){ throw new Error('La foto es muy pesada. Probá con otra.'); }
+    const fd = new FormData(); fd.append('pin', PIN); fd.append('foto', blob, 'foto.jpg');
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/subir-foto`, {method: 'POST', headers: {apikey: SUPABASE_KEY}, body: fd});
+    const d = await r.json().catch(() => null);
+    if(d && d.error === 'PIN incorrecto'){ sinPin(d); return; }
+    if(!r.ok || !d || !d.ok) throw new Error((d && d.error) || 'No pudimos subir la foto. Probá de nuevo.');
+    foto = d.url; toast('Foto subida. Acordate de guardar el cupón.');
+  }catch(err){ errorEditor(err.message); }
+  finally{ subiendo = false; pintarFoto(); }
+});
 $('sug-etiqueta').innerHTML = SUGERIDOS.map(s => `<button type="button" class="pill !py-1 text-xs" data-sug="${s}">${s}</button>`).join('');
 $('f-cup').addEventListener('click', e => {
   const t = e.target.closest('button'); if(!t) return;
   if(t.dataset.dia !== undefined){ const n = +t.dataset.dia; dias.has(n) ? dias.delete(n) : dias.add(n); }
   else if(t.dataset.preset){ dias = new Set(t.dataset.preset.split(',').map(Number)); }
   else if(t.dataset.emoji){ emoji = t.dataset.emoji; }
+  else if(t.dataset.foto){ foto = t.dataset.foto; }
+  else if(t.id === 'foto-quitar'){ foto = null; }
   else if(t.dataset.sug){ $('c-etiqueta').value = t.dataset.sug; }
   else if(t.dataset.franja){ const [a, b] = t.dataset.franja.split('-'); $('c-desde').value = a; $('c-hasta').value = b; }
   else if(t.id === 'sw-franja'){ franja = !franja; if(franja && !$('c-desde').value){ $('c-desde').value = '16:00'; $('c-hasta').value = '19:00'; } }
@@ -354,7 +415,7 @@ function abrirEditor(c){
   $('c-desc').value = c ? c.descripcion : ''; $('c-cond').value = c ? c.condiciones : ''; $('c-vence').value = c && c.vence ? c.vence : '';
   dias = new Set(c && c.dias ? c.dias : [0,1,2,3,4,5,6]); emoji = c ? c.icono : '🥐';
   franja = !!(c && c.hora_desde); $('c-desde').value = c && c.hora_desde ? c.hora_desde : ''; $('c-hasta').value = c && c.hora_hasta ? c.hora_hasta : '';
-  activo = c ? c.activo : true; dest = c ? c.destacado : false;
+  activo = c ? c.activo : true; dest = c ? c.destacado : false; foto = c && c.foto ? c.foto : null; subiendo = false;
   $('ed-err').classList.add('hidden'); zonaBorrar(); pintarEditor();
   $('sheet').setAttribute('aria-hidden', 'false'); setTimeout(() => $('c-titulo').focus(), 250);
 }
@@ -370,8 +431,9 @@ $('f-cup').addEventListener('submit', async e => {
     id: editando, titulo: $('c-titulo').value.trim(), etiqueta: $('c-etiqueta').value.trim(), icono: emoji,
     descripcion: $('c-desc').value.trim(), condiciones: $('c-cond').value.trim(), vence: $('c-vence').value || null,
     dias: dias.size === 7 ? null : [...dias], hora_desde: franja ? $('c-desde').value : null, hora_hasta: franja ? $('c-hasta').value : null,
-    activo, destacado: dest
+    activo, destacado: dest, foto: foto || ''
   };
+  if(subiendo) return errorEditor('Esperá a que termine de subir la foto.');
   if(!c.titulo) return errorEditor('Escribí un título para el cupón.');
   if(!c.etiqueta) return errorEditor('Escribí el descuento, por ejemplo “20% OFF” o “2x1”.');
   if(!dias.size) return errorEditor('Elegí al menos un día.');
