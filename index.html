@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11.2.10/swiper-bundle.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.3/dist/index.global.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@11.2.10/swiper-bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
 <style type="text/tailwindcss">
 @theme {
   --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
@@ -33,6 +34,14 @@
   body { @apply bg-crema-50 text-stone-900 font-sans antialiased dark:bg-espresso-950 dark:text-stone-100; }
   :focus-visible { @apply outline-3 outline-offset-2 outline-caramel-400; }
 }
+@layer components {
+  .field { @apply w-full rounded-2xl border-2 border-stone-200 bg-stone-50 py-3.5 pl-12 pr-4 text-base text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-mlc-maroon focus:bg-white focus:ring-4 focus:ring-mlc-yellow/40 dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:border-mlc-yellow dark:focus:bg-white/10; }
+  .field[aria-invalid="true"] { @apply border-cherry-500 focus:ring-cherry-500/20; }
+  .btn-primary { @apply inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-mlc-maroon py-4 text-base font-extrabold text-mlc-yellow shadow-lg shadow-mlc-maroon/25 transition hover:brightness-110 active:scale-[.98] disabled:cursor-default disabled:opacity-60; }
+  .eye { @apply absolute right-2 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-xl text-stone-400 transition hover:text-stone-700 dark:hover:text-white; }
+  .auth-tab { @apply text-stone-500 dark:text-stone-400; }
+  .auth-tab[aria-selected="true"] { @apply bg-white text-mlc-maroon shadow-sm dark:bg-mlc-yellow dark:text-mlc-maroon; }
+}
 </style>
 <style>
 /* Detalles que Tailwind no cubre: muescas del troquel y ajustes de Swiper */
@@ -50,9 +59,166 @@
 .pulse-dot{animation:pd 1.4s infinite}@keyframes pd{50%{opacity:.25}}
 .stamp{animation:st .45s cubic-bezier(.2,1.6,.4,1)}@keyframes st{from{transform:scale(2.2) rotate(-12deg);opacity:0}}
 @media (prefers-reduced-motion:reduce){.sheet,.sheet-wrap{transition:none}.pulse-dot,.stamp{animation:none}}
+[hidden]{display:none!important}
+.auth-view{animation:av .28s ease-out}@keyframes av{from{opacity:0;transform:translateY(8px)}}
+.spin{animation:sp .7s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.auth-view,.spin{animation:none}}
 </style>
 </head>
 <body class="min-h-dvh overflow-x-clip">
+
+<!-- ================= ACCESO ================= -->
+<section id="auth" class="relative flex min-h-dvh flex-col bg-mlc-yellow">
+  <div class="absolute -left-14 top-44 size-32 rounded-full bg-white/25" aria-hidden="true"></div>
+  <div class="absolute -right-10 top-56 size-20 rounded-full bg-mlc-maroon/[.07]" aria-hidden="true"></div>
+
+  <div class="relative mx-auto w-full max-w-md px-6 pt-[calc(env(safe-area-inset-top)+28px)] pb-8 text-center text-mlc-maroon">
+    <img id="auth-logo" alt="MLCalentitas · Las originales de Punta del Este" class="mx-auto w-48" width="170" height="123">
+    <p class="mt-3 font-display text-xl font-extrabold">Tu cuponera de descuentos</p>
+  </div>
+
+  <div class="relative mx-auto w-full max-w-md flex-1 rounded-t-[32px] bg-white px-6 pt-7 pb-[calc(env(safe-area-inset-bottom)+32px)] shadow-[0_-12px_40px_rgb(122_32_32_/_.12)] dark:bg-espresso-900">
+
+    <!-- Pestañas -->
+    <div id="auth-tabs" class="grid grid-cols-2 gap-1 rounded-2xl bg-stone-100 p-1 dark:bg-white/5" role="tablist">
+      <button type="button" data-view="login" role="tab" class="auth-tab rounded-xl py-2.5 text-sm font-bold transition">Ingresar</button>
+      <button type="button" data-view="signup" role="tab" class="auth-tab rounded-xl py-2.5 text-sm font-bold transition">Crear cuenta</button>
+    </div>
+
+    <!-- Aviso -->
+    <div id="auth-alert" class="mt-5 hidden items-start gap-2.5 rounded-2xl px-4 py-3 text-sm font-semibold" role="alert">
+      <svg class="mt-0.5 size-4 shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a1 1 0 0 0 0 2v3a1 1 0 0 0 1 1h1a1 1 0 1 0 0-2v-3a1 1 0 0 0-1-1H9Z" clip-rule="evenodd"/></svg>
+      <span id="auth-alert-t"></span>
+    </div>
+
+    <!-- Ingresar -->
+    <form id="v-login" class="auth-view mt-6 grid gap-4" novalidate>
+      <div>
+        <h1 class="font-display text-2xl font-extrabold">¡Hola de nuevo!</h1>
+        <p class="mt-1 text-sm text-stone-500 dark:text-stone-400">Ingresá para ver tus cupones.</p>
+      </div>
+      <div>
+        <label for="li-email" class="mb-1.5 block text-sm font-bold">Email</label>
+        <div class="relative">
+          <svg class="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></svg>
+          <input id="li-email" type="email" autocomplete="email" inputmode="email" required placeholder="nombre@correo.com" class="field">
+        </div>
+      </div>
+      <div>
+        <div class="mb-1.5 flex items-center justify-between">
+          <label for="li-pass" class="block text-sm font-bold">Contraseña</label>
+          <button type="button" data-go="forgot" class="text-sm font-bold text-mlc-maroon underline-offset-4 hover:underline dark:text-mlc-yellow">¿Olvidaste tu contraseña?</button>
+        </div>
+        <div class="relative">
+          <svg class="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+          <input id="li-pass" type="password" autocomplete="current-password" required placeholder="Tu contraseña" class="field pr-12">
+          <button type="button" class="eye" data-eye="li-pass" aria-label="Mostrar contraseña"></button>
+        </div>
+      </div>
+      <button type="submit" class="btn-primary">Ingresar</button>
+      <p class="text-center text-sm text-stone-500 dark:text-stone-400">¿No tenés cuenta? <button type="button" data-go="signup" class="font-bold text-mlc-maroon underline underline-offset-4 dark:text-mlc-yellow">Creala gratis</button></p>
+    </form>
+
+    <!-- Crear cuenta -->
+    <form id="v-signup" class="auth-view mt-6 grid gap-4" novalidate hidden>
+      <div>
+        <h1 class="font-display text-2xl font-extrabold">Creá tu cuenta</h1>
+        <p class="mt-1 text-sm text-stone-500 dark:text-stone-400">Sumate y accedé a descuentos exclusivos.</p>
+      </div>
+      <div>
+        <label for="su-email" class="mb-1.5 block text-sm font-bold">Email</label>
+        <div class="relative">
+          <svg class="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></svg>
+          <input id="su-email" type="email" autocomplete="email" inputmode="email" required placeholder="nombre@correo.com" class="field">
+        </div>
+      </div>
+      <div>
+        <label for="su-pass" class="mb-1.5 block text-sm font-bold">Contraseña</label>
+        <div class="relative">
+          <svg class="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+          <input id="su-pass" type="password" autocomplete="new-password" required placeholder="Mínimo 8 caracteres" class="field pr-12" data-meter="su-meter">
+          <button type="button" class="eye" data-eye="su-pass" aria-label="Mostrar contraseña"></button>
+        </div>
+        <div id="su-meter" class="meter mt-2"></div>
+      </div>
+      <div>
+        <label for="su-pass2" class="mb-1.5 block text-sm font-bold">Repetí la contraseña</label>
+        <div class="relative">
+          <svg class="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+          <input id="su-pass2" type="password" autocomplete="new-password" required placeholder="La misma contraseña" class="field pr-12">
+          <button type="button" class="eye" data-eye="su-pass2" aria-label="Mostrar contraseña"></button>
+        </div>
+      </div>
+      <button type="submit" class="btn-primary">Crear cuenta</button>
+      <p class="text-center text-xs text-stone-500 dark:text-stone-400">Usamos tu email solo para tu cuenta y tus cupones.</p>
+    </form>
+
+    <!-- Olvidé mi contraseña -->
+    <form id="v-forgot" class="auth-view mt-2 grid gap-4" novalidate hidden>
+      <button type="button" data-go="login" class="-ml-1 inline-flex w-fit items-center gap-1 rounded-lg py-1 pr-2 text-sm font-bold text-stone-500 dark:text-stone-300">
+        <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.8 4.2a.75.75 0 0 1 0 1.06L8.06 10l4.74 4.74a.75.75 0 1 1-1.06 1.06l-5.27-5.27a.75.75 0 0 1 0-1.06l5.27-5.27a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd"/></svg>Volver
+      </button>
+      <div class="grid size-14 place-items-center rounded-2xl bg-mlc-yellow/30 text-mlc-maroon dark:text-mlc-yellow">
+        <svg class="size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m10.8 12.2 8.7-8.7M16.5 6.5l2.5 2.5M14 9l2 2"/></svg>
+      </div>
+      <div>
+        <h1 class="font-display text-2xl font-extrabold">¿Olvidaste tu contraseña?</h1>
+        <p class="mt-1 text-sm text-stone-500 dark:text-stone-400">Escribí tu email y te mandamos un link para crear una nueva.</p>
+      </div>
+      <div>
+        <label for="fo-email" class="mb-1.5 block text-sm font-bold">Email</label>
+        <div class="relative">
+          <svg class="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></svg>
+          <input id="fo-email" type="email" autocomplete="email" inputmode="email" required placeholder="nombre@correo.com" class="field">
+        </div>
+      </div>
+      <button type="submit" class="btn-primary">Enviar link de recuperación</button>
+    </form>
+
+    <!-- Revisá tu correo -->
+    <div id="v-sent" class="auth-view mt-4 grid justify-items-center gap-3 text-center" hidden>
+      <div class="grid size-16 place-items-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">
+        <svg class="size-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></svg>
+      </div>
+      <h1 class="font-display text-2xl font-extrabold">Revisá tu correo</h1>
+      <p id="sent-t" class="max-w-[34ch] text-sm text-stone-500 dark:text-stone-400"></p>
+      <p class="text-xs text-stone-400">¿No llegó? Mirá en spam o promociones.</p>
+      <button type="button" data-go="login" class="btn-primary mt-2 w-full">Volver a ingresar</button>
+    </div>
+
+    <!-- Nueva contraseña (llega desde el link del mail) -->
+    <form id="v-reset" class="auth-view mt-2 grid gap-4" novalidate hidden>
+      <div class="grid size-14 place-items-center rounded-2xl bg-mlc-yellow/30 text-mlc-maroon dark:text-mlc-yellow">
+        <svg class="size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+      </div>
+      <div>
+        <h1 class="font-display text-2xl font-extrabold">Elegí una contraseña nueva</h1>
+        <p class="mt-1 text-sm text-stone-500 dark:text-stone-400">Vas a usarla la próxima vez que ingreses.</p>
+      </div>
+      <div>
+        <label for="re-pass" class="mb-1.5 block text-sm font-bold">Nueva contraseña</label>
+        <div class="relative">
+          <svg class="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+          <input id="re-pass" type="password" autocomplete="new-password" required placeholder="Mínimo 8 caracteres" class="field pr-12" data-meter="re-meter">
+          <button type="button" class="eye" data-eye="re-pass" aria-label="Mostrar contraseña"></button>
+        </div>
+        <div id="re-meter" class="meter mt-2"></div>
+      </div>
+      <div>
+        <label for="re-pass2" class="mb-1.5 block text-sm font-bold">Repetí la contraseña</label>
+        <div class="relative">
+          <svg class="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-stone-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+          <input id="re-pass2" type="password" autocomplete="new-password" required placeholder="La misma contraseña" class="field pr-12">
+          <button type="button" class="eye" data-eye="re-pass2" aria-label="Mostrar contraseña"></button>
+        </div>
+      </div>
+      <button type="submit" class="btn-primary">Guardar contraseña</button>
+    </form>
+  </div>
+</section>
+
+<!-- ================= CUPONERA ================= -->
+<div id="app" hidden>
 
 <!-- Encabezado -->
 <header class="relative overflow-hidden bg-mlc-yellow text-mlc-maroon px-4 pt-[calc(env(safe-area-inset-top)+16px)] pb-24">
@@ -60,7 +226,7 @@
   <div class="absolute -left-10 bottom-10 size-28 rounded-full bg-white/25" aria-hidden="true"></div>
   <div class="mx-auto max-w-md relative">
     <div class="flex items-start justify-between gap-3">
-      <img src="logo.jpg" alt="MLCalentitas · Las originales de Punta del Este" class="w-44" width="170" height="123">
+      <img src="data:image/jpeg;base64,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" alt="MLCalentitas · Las originales de Punta del Este" class="w-44" width="170" height="123">
       <span id="saludo" class="mt-1 rounded-full bg-mlc-maroon px-3 py-1 text-sm font-bold text-mlc-yellow"></span>
     </div>
     <h1 class="font-display mt-4 text-[2.35rem] leading-[1.02] font-extrabold tracking-tight text-balance">Tu cuponera<br><span class="mt-1 inline-block -rotate-1 rounded-xl bg-mlc-maroon px-2.5 pb-1 text-mlc-yellow">de descuentos</span></h1>
@@ -70,23 +236,13 @@
 
 <main class="mx-auto max-w-md px-4 -mt-16 pb-16">
   <!-- Identificación -->
-  <section id="who" class="relative z-10 rounded-3xl bg-white p-4 shadow-xl shadow-espresso-900/10 ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10">
-    <div id="who-out" class="flex items-center gap-3">
-      <div class="grid size-11 shrink-0 place-items-center rounded-2xl bg-caramel-400/20 text-xl">✉️</div>
-      <div class="min-w-0 flex-1">
-        <p class="font-bold leading-tight">Activá tus cupones</p>
-        <p class="text-sm text-stone-500 dark:text-stone-300">Solo necesitás tu email</p>
-      </div>
-      <button id="btn-ingresar" class="rounded-xl bg-espresso-800 px-4 py-2.5 text-sm font-bold text-white active:scale-95 transition dark:bg-caramel-400 dark:text-espresso-950">Ingresar</button>
+  <section id="who" class="relative z-10 flex items-center gap-3 rounded-3xl bg-white p-4 shadow-xl shadow-espresso-900/10 ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10">
+    <div id="avatar" class="grid size-11 shrink-0 place-items-center rounded-2xl bg-mlc-maroon font-display text-lg font-bold text-mlc-yellow">A</div>
+    <div class="min-w-0 flex-1">
+      <p class="text-xs text-stone-500 dark:text-stone-300">Tu cuenta</p>
+      <p id="mail" class="truncate font-bold"></p>
     </div>
-    <div id="who-in" class="hidden items-center gap-3">
-      <div id="avatar" class="grid size-11 shrink-0 place-items-center rounded-2xl bg-espresso-800 font-display text-lg font-bold text-white dark:bg-caramel-400 dark:text-espresso-950">A</div>
-      <div class="min-w-0 flex-1">
-        <p class="text-xs text-stone-500 dark:text-stone-300">Usando cupones como</p>
-        <p id="mail" class="truncate font-bold"></p>
-      </div>
-      <button id="btn-cambiar" class="rounded-lg px-2 py-1 text-sm font-semibold text-stone-500 underline underline-offset-4 dark:text-stone-300">Cambiar</button>
-    </div>
+    <button id="btn-salir" type="button" class="rounded-xl border-2 border-stone-200 px-3 py-1.5 text-sm font-bold text-stone-600 transition hover:bg-stone-50 dark:border-white/15 dark:text-stone-200">Salir</button>
   </section>
 
   <!-- Carrusel de cupones -->
@@ -119,21 +275,6 @@
   <p class="mt-6 text-center text-xs text-stone-500 dark:text-stone-400">Cada cupón se usa una vez por persona. Sujeto a disponibilidad.</p>
 </main>
 
-<!-- Hoja: email -->
-<div id="sheet-email" class="sheet-wrap fixed inset-0 z-40 flex items-end justify-center bg-black/50 backdrop-blur-sm" aria-hidden="true">
-  <form id="f-email" class="sheet w-full max-w-md rounded-t-[28px] bg-white px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+24px)] dark:bg-espresso-800" role="dialog" aria-modal="true" aria-labelledby="e-title">
-    <div class="mx-auto mb-5 h-1.5 w-10 rounded-full bg-stone-300 dark:bg-white/20"></div>
-    <h3 id="e-title" class="font-display text-2xl font-bold">¿Cuál es tu email?</h3>
-    <p class="mt-1 text-sm text-stone-500 dark:text-stone-300">Así cada cupón queda a tu nombre y se usa una sola vez. No te vamos a llenar de mails.</p>
-    <label for="email" class="sr-only">Email</label>
-    <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="nombre@correo.com" required
-      class="mt-5 w-full rounded-2xl border-2 border-stone-200 bg-crema-50 px-4 py-3.5 text-lg outline-none transition focus:border-espresso-700 dark:border-white/10 dark:bg-espresso-900 dark:focus:border-caramel-400">
-    <p id="email-err" class="mt-2 hidden text-sm font-semibold text-cherry-500"></p>
-    <button type="submit" class="mt-4 w-full rounded-2xl bg-cherry-500 py-4 text-lg font-bold text-white shadow-lg shadow-cherry-500/30 transition active:scale-[.98]">Continuar</button>
-    <button type="button" data-close class="mt-2 w-full py-3 font-semibold text-stone-500 dark:text-stone-300">Ahora no</button>
-  </form>
-</div>
-
 <!-- Hoja: código -->
 <div id="sheet-code" class="sheet-wrap fixed inset-0 z-40 flex items-end justify-center bg-black/50 backdrop-blur-sm" aria-hidden="true">
   <div class="sheet w-full max-w-md rounded-t-[28px] bg-white px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+24px)] text-center dark:bg-espresso-800" role="dialog" aria-modal="true" aria-labelledby="s-title">
@@ -154,6 +295,8 @@
     <button id="s-close" type="button" data-close class="mt-5 w-full rounded-2xl bg-espresso-800 py-4 text-lg font-bold text-white transition active:scale-[.98] dark:bg-caramel-400 dark:text-espresso-950">Listo</button>
   </div>
 </div>
+
+</div><!-- /app -->
 
 <div id="toast" class="fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+16px)] z-50 mx-auto hidden max-w-md rounded-2xl bg-stone-900 px-4 py-3 text-center text-sm font-semibold text-white shadow-2xl"></div>
 
@@ -180,7 +323,8 @@ const fechaCorta = d => new Date(d + 'T00:00:00').toLocaleDateString('es-AR', {d
 const H = {apikey: SUPABASE_KEY, 'Content-Type': 'application/json'};
 
 async function rpc(fn, args){
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {method:'POST', headers:H, body:JSON.stringify(args)});
+  const headers = {...H}; if(sesion) headers.Authorization = 'Bearer ' + sesion.access_token;
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {method:'POST', headers, body:JSON.stringify(args)});
   const d = await r.json().catch(() => null);
   if(!r.ok) throw new Error((d && d.message) || 'No pudimos conectar. Probá de nuevo.');
   return d;
@@ -190,12 +334,8 @@ async function getCupones(){
   if(!r.ok) throw new Error('No pudimos cargar los cupones.');
   return r.json();
 }
-const store = {
-  get(){ try{ return localStorage.getItem('cuponera_email') || '' }catch(e){ return '' } },
-  set(v){ try{ v ? localStorage.setItem('cuponera_email', v) : localStorage.removeItem('cuponera_email') }catch(e){} }
-};
-
-let email = store.get(), cupones = [], mios = {}, abierto = null, pendiente = null, poll = null, wake = null, swiper = null, swiperMis = null;
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let sesion = null, email = '', cupones = [], mios = {}, abierto = null, poll = null, wake = null, swiper = null, swiperMis = null;
 const tema = c => TEMAS[cupones.indexOf(c) % TEMAS.length];
 
 // Encabezado
@@ -214,32 +354,11 @@ function cerrarHoja(id){ $(id).setAttribute('aria-hidden','true'); }
 document.querySelectorAll('.sheet-wrap').forEach(w => {
   w.addEventListener('click', e => { if(e.target === w || e.target.closest('[data-close]')) cerrar(w.id); });
 });
-document.addEventListener('keydown', e => { if(e.key === 'Escape'){ cerrar('sheet-email'); cerrar('sheet-code'); } });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') cerrar('sheet-code'); });
 function cerrar(id){
   cerrarHoja(id);
   if(id === 'sheet-code'){ abierto = null; clearInterval(poll); try{ wake && wake.release(); }catch(e){} wake = null; }
-  if(id === 'sheet-email') pendiente = null;
 }
-
-// ---------- Identificación ----------
-function pintarEmail(){
-  $('who-out').classList.toggle('hidden', !!email); $('who-out').classList.toggle('flex', !email);
-  $('who-in').classList.toggle('hidden', !email);   $('who-in').classList.toggle('flex', !!email);
-  $('mail').textContent = email; $('avatar').textContent = (email[0] || '?').toUpperCase();
-}
-$('btn-ingresar').onclick = () => { abrirHoja('sheet-email'); setTimeout(() => $('email').focus(), 250); };
-$('btn-cambiar').onclick = () => { email = ''; store.set(''); mios = {}; pintarEmail(); pintarTodo(); $('email').value = ''; abrirHoja('sheet-email'); };
-$('f-email').addEventListener('submit', async ev => {
-  ev.preventDefault();
-  const v = $('email').value.trim().toLowerCase();
-  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){ $('email-err').textContent = 'Revisá el email: parece incompleto.'; $('email-err').classList.remove('hidden'); return; }
-  $('email-err').classList.add('hidden');
-  email = v; store.set(v); pintarEmail();
-  const id = pendiente; cerrarHoja('sheet-email'); pendiente = null;
-  try{ await cargarMios(); }catch(e){}
-  pintarTodo();
-  if(id) pedir(id); else toast('¡Listo! Ya podés usar tus cupones.');
-});
 
 // ---------- Cupones ----------
 function tarjeta(c){
@@ -275,7 +394,7 @@ function tarjeta(c){
 
 function pintarTodo(){
   const disp = cupones.filter(c => !(mios[c.id] && mios[c.id].estado === 'usado')).length;
-  $('contador').textContent = cupones.length ? (email ? `${disp} de ${cupones.length} disponibles` : `${cupones.length} cupones`) : '';
+  $('contador').textContent = cupones.length ? `${disp} de ${cupones.length} disponibles` : '';
   const idx = swiper ? swiper.activeIndex : 0;
   $('slides').innerHTML = cupones.length ? cupones.map(tarjeta).join('')
     : `<div class="swiper-slide"><div class="grid h-[25.5rem] place-items-center rounded-[28px] bg-white p-8 text-center dark:bg-espresso-800"><div><p class="text-5xl">🫖</p><p class="mt-3 font-bold">No hay cupones activos</p><p class="text-sm text-stone-500">Volvé pronto, siempre sumamos nuevos.</p></div></div></div>`;
@@ -302,7 +421,7 @@ function pintarTodo(){
 
 async function cargarMios(){
   if(!email){ mios = {}; return; }
-  const rows = await rpc('mis_cupones', {p_email: email});
+  const rows = await rpc('mis_cupones_cuenta', {});
   mios = {}; (rows || []).forEach(r => mios[r.cupon_id] = r);
 }
 
@@ -313,11 +432,10 @@ document.addEventListener('click', ev => {
 });
 
 async function pedir(id){
-  if(!email){ pendiente = id; abrirHoja('sheet-email'); setTimeout(() => $('email').focus(), 250); return; }
   const b = document.querySelector(`[data-pedir="${id}"]`);
   if(b){ b.disabled = true; b.textContent = 'Generando…'; }
   try{
-    const rows = await rpc('pedir_cupon', {p_email: email, p_cupon_id: id});
+    const rows = await rpc('mi_pedir_cupon', {p_cupon_id: id});
     if(rows && rows[0]) mios[id] = {cupon_id: id, ...rows[0]};
     pintarTodo(); abrir(id);
   }catch(e){
@@ -356,12 +474,188 @@ async function abrir(id){
   }, 4000);
 }
 
-// ---------- Inicio ----------
+// ---------- Acceso (Supabase Auth) ----------
+const ICONO_OJO = '<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+const ICONO_OJO_NO = '<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 3l18 18M10.6 5.6A10 10 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-3.2 3.9M6.4 6.9C3.9 8.6 2.5 12 2.5 12S6 18.5 12 18.5c1.7 0 3.2-.5 4.4-1.2M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+const SPINNER = '<svg class="spin size-5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity=".25" stroke-width="3"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
+const VISTAS = ['login', 'signup', 'forgot', 'sent', 'reset'];
+const emailOk = v => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+const volverA = () => location.origin + location.pathname;
+
+$('auth-logo').src = document.querySelector('header img').src;
+
+function vista(v){
+  VISTAS.forEach(x => $('v-' + x).hidden = x !== v);
+  $('auth-tabs').hidden = !(v === 'login' || v === 'signup');
+  document.querySelectorAll('.auth-tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.view === v)));
+  aviso();
+  const primero = $('v-' + v).querySelector('input');
+  if(primero) setTimeout(() => primero.focus(), 50);
+}
+function aviso(msg, tipo = 'error'){
+  const a = $('auth-alert');
+  if(!msg){ a.classList.add('hidden'); a.classList.remove('flex'); return; }
+  a.className = 'mt-5 flex items-start gap-2.5 rounded-2xl px-4 py-3 text-sm font-semibold ' +
+    (tipo === 'ok' ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-400/10 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-400/10 dark:text-red-300');
+  $('auth-alert-t').textContent = msg;
+}
+function marcar(ids){ document.querySelectorAll('#auth .field').forEach(i => i.removeAttribute('aria-invalid')); ids.forEach(id => $(id).setAttribute('aria-invalid', 'true')); if(ids[0]) $(ids[0]).focus(); }
+async function cargando(form, fn){
+  const b = form.querySelector('.btn-primary'), txt = b.innerHTML;
+  b.disabled = true; b.innerHTML = SPINNER + '<span>Un momento…</span>';
+  try{ await fn(); } finally { b.disabled = false; b.innerHTML = txt; }
+}
+function traducir(err){
+  const m = (err && (err.message || err.msg || String(err))) || '';
+  if(/invalid login credentials/i.test(m)) return 'Email o contraseña incorrectos.';
+  if(/email not confirmed/i.test(m)) return 'Todavía no confirmaste tu email. Revisá tu correo y tocá el link que te mandamos.';
+  if(/already registered|already exists/i.test(m)) return 'Ya existe una cuenta con ese email. Ingresá o recuperá tu contraseña.';
+  if(/rate limit|security purposes|too many/i.test(m)) return 'Hiciste muchos intentos seguidos. Esperá un minuto y probá de nuevo.';
+  if(/password should|weak|at least/i.test(m)) return 'La contraseña es muy débil. Usá al menos 8 caracteres, con letras y números.';
+  if(/same.*password|different from the old/i.test(m)) return 'La contraseña nueva tiene que ser distinta de la anterior.';
+  if(/expired|invalid.*(token|link)|otp/i.test(m)) return 'El link venció o ya se usó. Pedí uno nuevo.';
+  if(/fetch|network/i.test(m)) return 'No hay conexión. Revisá internet y probá de nuevo.';
+  return 'Algo salió mal. Probá de nuevo en un momento.';
+}
+
+// Mostrar / ocultar contraseña
+document.querySelectorAll('[data-eye]').forEach(b => {
+  b.innerHTML = ICONO_OJO;
+  b.onclick = () => {
+    const i = $(b.dataset.eye), ver = i.type === 'password';
+    i.type = ver ? 'text' : 'password'; b.innerHTML = ver ? ICONO_OJO_NO : ICONO_OJO;
+    b.setAttribute('aria-label', ver ? 'Ocultar contraseña' : 'Mostrar contraseña');
+  };
+});
+// Medidor de seguridad
+function fuerza(p){ let n = 0; if(p.length >= 8) n++; if(/[a-z]/.test(p) && /[A-Z]/.test(p)) n++; if(/\d/.test(p)) n++; if(/[^A-Za-z0-9]/.test(p) || p.length >= 12) n++; return p ? Math.max(n, 1) : 0; }
+document.querySelectorAll('[data-meter]').forEach(i => {
+  const m = $(i.dataset.meter);
+  const pintar = () => {
+    const n = fuerza(i.value), col = ['bg-red-500','bg-amber-500','bg-lime-500','bg-emerald-600'][n - 1] || '';
+    const txt = ['', 'Débil', 'Aceptable', 'Buena', 'Muy segura'][n];
+    m.innerHTML = `<div class="flex gap-1.5">${[1,2,3,4].map(k => `<span class="h-1.5 flex-1 rounded-full ${k <= n ? col : 'bg-stone-200 dark:bg-white/10'}"></span>`).join('')}</div>` +
+      (n ? `<p class="mt-1 text-xs font-semibold text-stone-500 dark:text-stone-400">Seguridad: ${txt}</p>` : '');
+  };
+  i.addEventListener('input', pintar); pintar();
+});
+document.querySelectorAll('.auth-tab, [data-go]').forEach(b => b.addEventListener('click', () => {
+  const v = b.dataset.view || b.dataset.go;
+  if(v === 'forgot' && emailOk($('li-email').value.trim())) $('fo-email').value = $('li-email').value.trim();
+  vista(v);
+}));
+
+// Ingresar
+$('v-login').addEventListener('submit', e => {
+  e.preventDefault();
+  const em = $('li-email').value.trim().toLowerCase(), pw = $('li-pass').value;
+  if(!emailOk(em)){ aviso('Escribí un email válido.'); return marcar(['li-email']); }
+  if(!pw){ aviso('Escribí tu contraseña.'); return marcar(['li-pass']); }
+  marcar([]);
+  return cargando(e.target, async () => {
+    const { error } = await sb.auth.signInWithPassword({ email: em, password: pw });
+    if(error){ aviso(traducir(error)); marcar(['li-pass']); }
+  });
+});
+
+// Crear cuenta
+$('v-signup').addEventListener('submit', e => {
+  e.preventDefault();
+  const em = $('su-email').value.trim().toLowerCase(), pw = $('su-pass').value, pw2 = $('su-pass2').value;
+  if(!emailOk(em)){ aviso('Escribí un email válido.'); return marcar(['su-email']); }
+  if(pw.length < 8){ aviso('La contraseña tiene que tener al menos 8 caracteres.'); return marcar(['su-pass']); }
+  if(pw !== pw2){ aviso('Las contraseñas no coinciden.'); return marcar(['su-pass2']); }
+  marcar([]);
+  return cargando(e.target, async () => {
+    const { data, error } = await sb.auth.signUp({ email: em, password: pw, options: { emailRedirectTo: volverA() } });
+    if(error){ aviso(traducir(error)); return; }
+    if(data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0){
+      aviso('Ya existe una cuenta con ese email. Ingresá o recuperá tu contraseña.'); return;
+    }
+    if(!data.session){
+      $('sent-t').textContent = `Te mandamos un link a ${em} para confirmar tu cuenta. Tocalo y vas a entrar directo a tu cuponera.`;
+      vista('sent');
+    }
+  });
+});
+
+// Olvidé mi contraseña
+$('v-forgot').addEventListener('submit', e => {
+  e.preventDefault();
+  const em = $('fo-email').value.trim().toLowerCase();
+  if(!emailOk(em)){ aviso('Escribí un email válido.'); return marcar(['fo-email']); }
+  marcar([]);
+  return cargando(e.target, async () => {
+    const { error } = await sb.auth.resetPasswordForEmail(em, { redirectTo: volverA() });
+    if(error){ aviso(traducir(error)); return; }
+    $('sent-t').textContent = `Si ${em} tiene una cuenta, en unos minutos te llega un link para crear una contraseña nueva.`;
+    vista('sent');
+  });
+});
+
+// Nueva contraseña
+let recuperando = false;
+$('v-reset').addEventListener('submit', e => {
+  e.preventDefault();
+  const pw = $('re-pass').value, pw2 = $('re-pass2').value;
+  if(pw.length < 8){ aviso('La contraseña tiene que tener al menos 8 caracteres.'); return marcar(['re-pass']); }
+  if(pw !== pw2){ aviso('Las contraseñas no coinciden.'); return marcar(['re-pass2']); }
+  marcar([]);
+  return cargando(e.target, async () => {
+    const { error } = await sb.auth.updateUser({ password: pw });
+    if(error){ aviso(traducir(error)); return; }
+    recuperando = false;
+    const { data } = await sb.auth.getSession();
+    entrar(data.session);
+    toast('Listo, tu contraseña quedó actualizada.');
+  });
+});
+
+// Salir
+$('btn-salir').onclick = async () => { await sb.auth.signOut(); };
+
+// Cambiar entre acceso y cuponera
+async function entrar(s){
+  if(!s || recuperando){ return; }
+  const primeraVez = !sesion || sesion.user.id !== s.user.id;
+  sesion = s; email = (s.user.email || '').toLowerCase();
+  $('mail').textContent = email; $('avatar').textContent = (email[0] || '?').toUpperCase();
+  $('auth').hidden = true; $('app').hidden = false;
+  document.querySelector('meta[name="theme-color"]').content = '#FFCA00';
+  if(history.replaceState && location.hash) history.replaceState(null, '', location.pathname + location.search);
+  if(primeraVez){
+    try{ if(!cupones.length) cupones = await getCupones(); await cargarMios(); }
+    catch(e){ toast(e.message); }
+    pintarTodo();
+  }
+}
+function salir(){
+  sesion = null; email = ''; mios = {};
+  cerrar('sheet-code');
+  $('app').hidden = true; $('auth').hidden = false;
+  ['li-pass','su-pass','su-pass2','re-pass','re-pass2'].forEach(id => $(id).value = '');
+  vista('login');
+}
+
+sb.auth.onAuthStateChange((evento, s) => {
+  if(evento === 'PASSWORD_RECOVERY'){
+    recuperando = true; $('app').hidden = true; $('auth').hidden = false; vista('reset'); return;
+  }
+  if(evento === 'SIGNED_OUT'){ salir(); return; }
+  if(s) entrar(s);
+});
+
 (async function init(){
-  pintarEmail();
-  try{ cupones = await getCupones(); await cargarMios(); }
-  catch(e){ toast(e.message); }
-  pintarTodo();
+  // Errores que vienen en el link del mail (por ejemplo, link vencido)
+  const h = new URLSearchParams(location.hash.slice(1));
+  const { data } = await sb.auth.getSession();
+  if(recuperando) return;
+  if(data.session){ entrar(data.session); return; }
+  vista('login');
+  if(h.get('error_description')){
+    aviso(traducir({ message: h.get('error_description') }));
+    history.replaceState && history.replaceState(null, '', location.pathname + location.search);
+  }
 })();
 </script>
 </body>
