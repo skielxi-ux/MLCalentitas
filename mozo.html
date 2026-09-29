@@ -186,6 +186,8 @@ function pintar(r, recien){
     ? {wrap:'bg-emerald-600 text-white', chip:'bg-white/20', icon:'✓', txt:'Canje confirmado', sub:'Aplicá el descuento en la cuenta'}
     : usado
     ? {wrap:'bg-cherry-500 text-white', chip:'bg-white/20', icon:'✕', txt:'Código ya usado', sub:`Se canjeó el ${fecha(r.usado_en)}`}
+    : (r.en_horario === false || r.vencido)
+    ? {wrap:'bg-amber-50 text-amber-950 ring-2 ring-amber-400 dark:bg-amber-400/10 dark:text-amber-100', chip:'bg-amber-200 text-amber-900 dark:bg-amber-400/20 dark:text-amber-200', icon:'⏰', txt: r.vencido ? 'Cupón vencido' : 'Fuera de horario', sub: r.vencido ? 'Este cupón ya no se puede canjear.' : `Solo se canjea: ${r.horario}. Pedile al cliente que vuelva en ese horario.`, bloqueado:true}
     : {wrap:'bg-white text-stone-900 ring-2 ring-espresso-700 dark:bg-espresso-800 dark:text-white dark:ring-caramel-400', chip:'bg-emerald-100 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300', icon:'●', txt:'Válido · sin usar', sub:'Revisá las condiciones y confirmá'};
   $('res').innerHTML = `<div class="pop overflow-hidden rounded-3xl ${est.wrap} shadow-xl">
     <div class="p-5">
@@ -198,11 +200,14 @@ function pintar(r, recien){
         <span class="grid size-16 shrink-0 place-items-center rounded-2xl bg-black/5 text-4xl dark:bg-white/10">${esc(r.icono || '☕')}</span>
         <div class="min-w-0"><p class="font-display text-3xl font-extrabold leading-none">${esc(r.etiqueta)}</p><p class="mt-1 font-bold leading-snug">${esc(r.titulo)}</p></div>
       </div>
-      ${r.condiciones ? `<p class="mt-4 rounded-2xl bg-black/5 p-3 text-sm dark:bg-white/10"><b>Condiciones:</b> ${esc(r.condiciones)}</p>` : ''}
+      ${r.horario && !est.bloqueado ? `<p class="mt-4 flex items-center gap-2 rounded-2xl bg-black/5 p-3 text-sm dark:bg-white/10"><b>Horario:</b> ${esc(r.horario)}</p>` : ''}
+      ${r.condiciones ? `<p class="mt-2 rounded-2xl bg-black/5 p-3 text-sm dark:bg-white/10"><b>Condiciones:</b> ${esc(r.condiciones)}</p>` : ''}
       <p class="mt-3 truncate text-sm opacity-70">Cliente: ${esc(r.email)}</p>
     </div>
     <div class="grid gap-2 p-5 pt-0">
-      ${!usado
+      ${est.bloqueado
+        ? `<button id="b-otro" type="button" class="w-full rounded-2xl bg-amber-900 py-4 text-lg font-extrabold text-white transition active:scale-[.98] dark:bg-amber-300 dark:text-amber-950">Validar otro código</button>`
+        : !usado
         ? `<button id="b-canje" type="button" class="w-full rounded-2xl bg-emerald-600 py-4 text-lg font-extrabold text-white shadow-lg shadow-emerald-600/30 transition active:scale-[.98]">Confirmar canje</button>
            <button id="b-cancel" type="button" class="w-full rounded-2xl py-3 font-bold opacity-70">Cancelar</button>`
         : `<button id="b-otro" type="button" class="w-full rounded-2xl bg-white py-4 text-lg font-extrabold text-stone-900 transition active:scale-[.98]">Validar otro código</button>`}
@@ -221,6 +226,7 @@ $('res').addEventListener('click', async e => {
     const r = await rpc('canjear_codigo', {p_codigo: actual.codigo, p_pin: PIN});
     if(sinPin(r)) return;
     if(r.recien_canjeado){ pintar({...actual, ...r}, true); historial(); try{ navigator.vibrate && navigator.vibrate(80) }catch(_){} }
+    else if(r.fuera_de_horario){ pintar({...actual, en_horario: false}); }
     else pintar({...actual, ...r});
   }catch(err){ b.disabled = false; b.textContent = 'Confirmar canje'; $('cod-err').textContent = err.message; show($('cod-err'), true); }
 });
