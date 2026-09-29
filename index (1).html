@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFCA00">
+<title>Cuponera MLCalentitas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11.2.10/swiper-bundle.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.3/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11.2.10/swiper-bundle.min.js"></script>
+<style type="text/tailwindcss">
+@theme {
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --color-espresso-950: #0F1C15;
+  --color-espresso-900: #16291F;
+  --color-espresso-800: #1F3B2D;
+  --color-espresso-700: #2C5240;
+  --color-crema-50: #F5F3EE;
+  --color-crema-100: #ECE8DF;
+  --color-cherry-500: #C4382F;
+  --color-mlc-yellow: #FFCA00;
+  --color-mlc-maroon: #7A2020;
+  --color-cherry-600: #A82C24;
+  --color-caramel-400: #E3A33B;
+}
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; overflow-x: clip; }
+  body { @apply bg-crema-50 text-stone-900 font-sans antialiased dark:bg-espresso-950 dark:text-stone-100; }
+  :focus-visible { @apply outline-3 outline-offset-2 outline-caramel-400; }
+}
+</style>
+<style>
+/* Detalles que Tailwind no cubre: muescas del troquel y ajustes de Swiper */
+.notch{position:absolute;width:26px;height:26px;border-radius:9999px;top:50%;transform:translateY(-50%);background:var(--notch-bg,#F5F3EE)}
+@media (prefers-color-scheme:dark){.notch{--notch-bg:#0F1C15}}
+.cupones{padding:8px 0 44px!important;overflow:visible!important}
+.cupones .swiper-slide{border-radius:28px;height:auto}
+.cupones .swiper-pagination-bullet{background:#1F3B2D;opacity:.25;width:7px;height:7px;transition:all .25s}
+.cupones .swiper-pagination-bullet-active{opacity:1;width:22px;border-radius:9px;background:#C4382F}
+@media (prefers-color-scheme:dark){.cupones .swiper-pagination-bullet{background:#fff}}
+.sheet{transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+.sheet-wrap[aria-hidden="true"] .sheet{transform:translateY(105%)}
+.sheet-wrap[aria-hidden="true"]{pointer-events:none;opacity:0}
+.sheet-wrap{transition:opacity .2s}
+.pulse-dot{animation:pd 1.4s infinite}@keyframes pd{50%{opacity:.25}}
+.stamp{animation:st .45s cubic-bezier(.2,1.6,.4,1)}@keyframes st{from{transform:scale(2.2) rotate(-12deg);opacity:0}}
+@media (prefers-reduced-motion:reduce){.sheet,.sheet-wrap{transition:none}.pulse-dot,.stamp{animation:none}}
+</style>
+</head>
+<body class="min-h-dvh overflow-x-clip">
+
+<!-- Encabezado -->
+<header class="relative overflow-hidden bg-mlc-yellow text-mlc-maroon px-4 pt-[calc(env(safe-area-inset-top)+16px)] pb-24">
+  <div class="absolute -right-16 -top-16 size-56 rounded-full bg-mlc-maroon/[.06]" aria-hidden="true"></div>
+  <div class="absolute -left-10 bottom-10 size-28 rounded-full bg-white/25" aria-hidden="true"></div>
+  <div class="mx-auto max-w-md relative">
+    <div class="flex items-start justify-between gap-3">
+      <img src="logo.jpg" alt="MLCalentitas · Las originales de Punta del Este" class="w-44" width="170" height="123">
+      <span id="saludo" class="mt-1 rounded-full bg-mlc-maroon px-3 py-1 text-sm font-bold text-mlc-yellow"></span>
+    </div>
+    <h1 class="font-display mt-4 text-[2.35rem] leading-[1.02] font-extrabold tracking-tight text-balance">Tu cuponera<br><span class="mt-1 inline-block -rotate-1 rounded-xl bg-mlc-maroon px-2.5 pb-1 text-mlc-yellow">de descuentos</span></h1>
+    <p class="mt-3 max-w-[32ch] font-medium text-mlc-maroon/80">Deslizá, elegí un cupón y mostrale el código al mozo cuando pidas.</p>
+  </div>
+</header>
+
+<main class="mx-auto max-w-md px-4 -mt-16 pb-16">
+  <!-- Identificación -->
+  <section id="who" class="relative z-10 rounded-3xl bg-white p-4 shadow-xl shadow-espresso-900/10 ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10">
+    <div id="who-out" class="flex items-center gap-3">
+      <div class="grid size-11 shrink-0 place-items-center rounded-2xl bg-caramel-400/20 text-xl">✉️</div>
+      <div class="min-w-0 flex-1">
+        <p class="font-bold leading-tight">Activá tus cupones</p>
+        <p class="text-sm text-stone-500 dark:text-stone-300">Solo necesitás tu email</p>
+      </div>
+      <button id="btn-ingresar" class="rounded-xl bg-espresso-800 px-4 py-2.5 text-sm font-bold text-white active:scale-95 transition dark:bg-caramel-400 dark:text-espresso-950">Ingresar</button>
+    </div>
+    <div id="who-in" class="hidden items-center gap-3">
+      <div id="avatar" class="grid size-11 shrink-0 place-items-center rounded-2xl bg-espresso-800 font-display text-lg font-bold text-white dark:bg-caramel-400 dark:text-espresso-950">A</div>
+      <div class="min-w-0 flex-1">
+        <p class="text-xs text-stone-500 dark:text-stone-300">Usando cupones como</p>
+        <p id="mail" class="truncate font-bold"></p>
+      </div>
+      <button id="btn-cambiar" class="rounded-lg px-2 py-1 text-sm font-semibold text-stone-500 underline underline-offset-4 dark:text-stone-300">Cambiar</button>
+    </div>
+  </section>
+
+  <!-- Carrusel de cupones -->
+  <div class="mt-8 flex items-end justify-between">
+    <h2 class="font-display text-2xl font-bold">Cupones</h2>
+    <p id="contador" class="text-sm font-semibold text-stone-500 tabular-nums dark:text-stone-300"></p>
+  </div>
+  <div class="swiper cupones mt-3" id="swiper">
+    <div class="swiper-wrapper" id="slides">
+      <div class="swiper-slide"><div class="h-[25.5rem] animate-pulse rounded-[28px] bg-stone-200 dark:bg-espresso-800"></div></div>
+    </div>
+    <div class="swiper-pagination"></div>
+  </div>
+
+  <!-- Mis códigos -->
+  <section id="mis" class="hidden mt-2">
+    <h2 class="font-display text-xl font-bold">Mis códigos</h2>
+    <div class="swiper mt-3 !overflow-visible" id="swiper-mis"><div class="swiper-wrapper" id="mis-list"></div></div>
+  </section>
+
+  <!-- Cómo funciona -->
+  <section class="mt-10 rounded-3xl bg-crema-100 p-5 dark:bg-espresso-900">
+    <h2 class="font-display text-lg font-bold">Cómo funciona</h2>
+    <ol class="mt-4 grid gap-4">
+      <li class="flex gap-3"><span class="grid size-8 shrink-0 place-items-center rounded-full bg-espresso-800 text-sm font-bold text-white dark:bg-caramel-400 dark:text-espresso-950">1</span><p class="text-sm text-stone-600 dark:text-stone-300"><b class="text-stone-900 dark:text-white">Elegí un cupón</b> y tocá “Obtener código”.</p></li>
+      <li class="flex gap-3"><span class="grid size-8 shrink-0 place-items-center rounded-full bg-espresso-800 text-sm font-bold text-white dark:bg-caramel-400 dark:text-espresso-950">2</span><p class="text-sm text-stone-600 dark:text-stone-300"><b class="text-stone-900 dark:text-white">Mostrale el código</b> al mozo cuando hagas tu pedido.</p></li>
+      <li class="flex gap-3"><span class="grid size-8 shrink-0 place-items-center rounded-full bg-espresso-800 text-sm font-bold text-white dark:bg-caramel-400 dark:text-espresso-950">3</span><p class="text-sm text-stone-600 dark:text-stone-300"><b class="text-stone-900 dark:text-white">Él lo confirma</b> y el descuento va a tu cuenta.</p></li>
+    </ol>
+  </section>
+  <p class="mt-6 text-center text-xs text-stone-500 dark:text-stone-400">Cada cupón se usa una vez por persona. Sujeto a disponibilidad.</p>
+</main>
+
+<!-- Hoja: email -->
+<div id="sheet-email" class="sheet-wrap fixed inset-0 z-40 flex items-end justify-center bg-black/50 backdrop-blur-sm" aria-hidden="true">
+  <form id="f-email" class="sheet w-full max-w-md rounded-t-[28px] bg-white px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+24px)] dark:bg-espresso-800" role="dialog" aria-modal="true" aria-labelledby="e-title">
+    <div class="mx-auto mb-5 h-1.5 w-10 rounded-full bg-stone-300 dark:bg-white/20"></div>
+    <h3 id="e-title" class="font-display text-2xl font-bold">¿Cuál es tu email?</h3>
+    <p class="mt-1 text-sm text-stone-500 dark:text-stone-300">Así cada cupón queda a tu nombre y se usa una sola vez. No te vamos a llenar de mails.</p>
+    <label for="email" class="sr-only">Email</label>
+    <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="nombre@correo.com" required
+      class="mt-5 w-full rounded-2xl border-2 border-stone-200 bg-crema-50 px-4 py-3.5 text-lg outline-none transition focus:border-espresso-700 dark:border-white/10 dark:bg-espresso-900 dark:focus:border-caramel-400">
+    <p id="email-err" class="mt-2 hidden text-sm font-semibold text-cherry-500"></p>
+    <button type="submit" class="mt-4 w-full rounded-2xl bg-cherry-500 py-4 text-lg font-bold text-white shadow-lg shadow-cherry-500/30 transition active:scale-[.98]">Continuar</button>
+    <button type="button" data-close class="mt-2 w-full py-3 font-semibold text-stone-500 dark:text-stone-300">Ahora no</button>
+  </form>
+</div>
+
+<!-- Hoja: código -->
+<div id="sheet-code" class="sheet-wrap fixed inset-0 z-40 flex items-end justify-center bg-black/50 backdrop-blur-sm" aria-hidden="true">
+  <div class="sheet w-full max-w-md rounded-t-[28px] bg-white px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+24px)] text-center dark:bg-espresso-800" role="dialog" aria-modal="true" aria-labelledby="s-title">
+    <div class="mx-auto mb-5 h-1.5 w-10 rounded-full bg-stone-300 dark:bg-white/20"></div>
+    <div id="s-badge" class="mx-auto grid size-16 place-items-center rounded-2xl text-4xl"></div>
+    <h3 id="s-title" class="font-display mt-3 text-xl font-bold text-balance"></h3>
+    <p id="s-sub" class="mt-1 text-sm text-stone-500 dark:text-stone-300">Mostrale este código al mozo</p>
+    <div class="relative mt-5">
+      <div id="s-code" class="select-all rounded-2xl border-2 border-dashed border-cherry-500/60 bg-crema-50 py-5 font-mono text-5xl font-extrabold tracking-[.18em] tabular-nums dark:bg-espresso-900"></div>
+      <div id="s-stamp" class="stamp pointer-events-none absolute inset-0 hidden place-items-center">
+        <span class="-rotate-6 rounded-xl border-4 border-emerald-600 bg-white/90 px-5 py-1.5 font-display text-3xl font-extrabold tracking-wider text-emerald-600 dark:bg-espresso-800/90 dark:border-emerald-400 dark:text-emerald-400">CANJEADO</span>
+      </div>
+    </div>
+    <div id="s-status" class="mt-4 inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2 text-sm font-bold text-amber-800 dark:bg-amber-400/15 dark:text-amber-300">
+      <span class="pulse-dot size-2 rounded-full bg-current"></span><span id="s-status-t">Esperando confirmación del mozo</span>
+    </div>
+    <p id="s-cond" class="mt-3 text-xs text-stone-500 dark:text-stone-400"></p>
+    <button id="s-close" type="button" data-close class="mt-5 w-full rounded-2xl bg-espresso-800 py-4 text-lg font-bold text-white transition active:scale-[.98] dark:bg-caramel-400 dark:text-espresso-950">Listo</button>
+  </div>
+</div>
+
+<div id="toast" class="fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+16px)] z-50 mx-auto hidden max-w-md rounded-2xl bg-stone-900 px-4 py-3 text-center text-sm font-semibold text-white shadow-2xl"></div>
+
+<script>
+/* ====== CONFIGURACIÓN ====== */
+const NOMBRE_LOCAL = "MLCalentitas";
+const SUPABASE_URL = "https://ulkcugdtqxuxjmsyqomy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_8tZa-AWxSmLJo729GPYmlA_tdgOTF1n"; // clave pública, segura para el navegador
+/* =========================== */
+
+// Paleta de cada cupón (se asigna en orden)
+const TEMAS = [
+  {card:'bg-gradient-to-br from-cherry-500 to-cherry-600 text-white', chip:'bg-white/20', btn:'bg-white text-cherry-600', badge:'bg-cherry-500/15'},
+  {card:'bg-gradient-to-br from-espresso-700 to-espresso-900 text-white', chip:'bg-white/15', btn:'bg-caramel-400 text-espresso-950', badge:'bg-espresso-700/15'},
+  {card:'bg-gradient-to-br from-caramel-400 to-amber-600 text-espresso-950', chip:'bg-black/10', btn:'bg-espresso-900 text-white', badge:'bg-caramel-400/25'},
+  {card:'bg-gradient-to-br from-stone-800 to-stone-950 text-white', chip:'bg-white/15', btn:'bg-white text-stone-900', badge:'bg-stone-500/15'},
+  {card:'bg-gradient-to-br from-rose-300 to-rose-400 text-rose-950', chip:'bg-white/40', btn:'bg-rose-950 text-white', badge:'bg-rose-300/40'},
+];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fecha = iso => new Date(iso).toLocaleString('es-AR', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false});
+const fechaCorta = d => new Date(d + 'T00:00:00').toLocaleDateString('es-AR', {day:'numeric', month:'long'});
+const H = {apikey: SUPABASE_KEY, 'Content-Type': 'application/json'};
+
+async function rpc(fn, args){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {method:'POST', headers:H, body:JSON.stringify(args)});
+  const d = await r.json().catch(() => null);
+  if(!r.ok) throw new Error((d && d.message) || 'No pudimos conectar. Probá de nuevo.');
+  return d;
+}
+async function getCupones(){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/cupones?select=id,titulo,descripcion,etiqueta,condiciones,icono,vence&order=orden.asc`, {headers:H});
+  if(!r.ok) throw new Error('No pudimos cargar los cupones.');
+  return r.json();
+}
+const store = {
+  get(){ try{ return localStorage.getItem('cuponera_email') || '' }catch(e){ return '' } },
+  set(v){ try{ v ? localStorage.setItem('cuponera_email', v) : localStorage.removeItem('cuponera_email') }catch(e){} }
+};
+
+let email = store.get(), cupones = [], mios = {}, abierto = null, pendiente = null, poll = null, wake = null, swiper = null, swiperMis = null;
+const tema = c => TEMAS[cupones.indexOf(c) % TEMAS.length];
+
+// Encabezado
+document.title = 'Cuponera · ' + NOMBRE_LOCAL;
+const h = new Date().getHours();
+$('saludo').textContent = h < 12 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
+
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.remove('hidden');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 3200);
+}
+
+// ---------- Hojas ----------
+function abrirHoja(id){ $(id).setAttribute('aria-hidden','false'); }
+function cerrarHoja(id){ $(id).setAttribute('aria-hidden','true'); }
+document.querySelectorAll('.sheet-wrap').forEach(w => {
+  w.addEventListener('click', e => { if(e.target === w || e.target.closest('[data-close]')) cerrar(w.id); });
+});
+document.addEventListener('keydown', e => { if(e.key === 'Escape'){ cerrar('sheet-email'); cerrar('sheet-code'); } });
+function cerrar(id){
+  cerrarHoja(id);
+  if(id === 'sheet-code'){ abierto = null; clearInterval(poll); try{ wake && wake.release(); }catch(e){} wake = null; }
+  if(id === 'sheet-email') pendiente = null;
+}
+
+// ---------- Identificación ----------
+function pintarEmail(){
+  $('who-out').classList.toggle('hidden', !!email); $('who-out').classList.toggle('flex', !email);
+  $('who-in').classList.toggle('hidden', !email);   $('who-in').classList.toggle('flex', !!email);
+  $('mail').textContent = email; $('avatar').textContent = (email[0] || '?').toUpperCase();
+}
+$('btn-ingresar').onclick = () => { abrirHoja('sheet-email'); setTimeout(() => $('email').focus(), 250); };
+$('btn-cambiar').onclick = () => { email = ''; store.set(''); mios = {}; pintarEmail(); pintarTodo(); $('email').value = ''; abrirHoja('sheet-email'); };
+$('f-email').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const v = $('email').value.trim().toLowerCase();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){ $('email-err').textContent = 'Revisá el email: parece incompleto.'; $('email-err').classList.remove('hidden'); return; }
+  $('email-err').classList.add('hidden');
+  email = v; store.set(v); pintarEmail();
+  const id = pendiente; cerrarHoja('sheet-email'); pendiente = null;
+  try{ await cargarMios(); }catch(e){}
+  pintarTodo();
+  if(id) pedir(id); else toast('¡Listo! Ya podés usar tus cupones.');
+});
+
+// ---------- Cupones ----------
+function tarjeta(c){
+  const t = tema(c), m = mios[c.id], usado = m && m.estado === 'usado';
+  let accion;
+  if(usado) accion = `<div class="flex w-full items-center justify-center gap-2 rounded-2xl ${t.chip} py-3.5 font-bold">✓ Usado el ${esc(fecha(m.usado_en))}</div>`;
+  else if(m) accion = `<button data-ver="${c.id}" class="w-full rounded-2xl ${t.btn} py-3.5 text-base font-extrabold shadow-lg transition active:scale-[.97]">Ver mi código · <span class="font-mono tracking-wider">${esc(m.codigo)}</span></button>`;
+  else accion = `<button data-pedir="${c.id}" class="w-full rounded-2xl ${t.btn} py-3.5 text-base font-extrabold shadow-lg transition active:scale-[.97]">Obtener código</button>`;
+  return `<div class="swiper-slide">
+    <article class="relative flex h-full min-h-[25.5rem] flex-col overflow-hidden rounded-[28px] ${t.card} shadow-2xl shadow-black/20 ${usado ? 'grayscale-[.7] opacity-80' : ''}">
+      <div class="absolute -right-8 -top-8 size-40 rounded-full bg-white/10"></div>
+      <div class="absolute right-10 top-24 size-16 rounded-full bg-white/10"></div>
+      <div class="relative flex-1 p-6">
+        <div class="flex items-start justify-between gap-3">
+          <span class="rounded-full ${t.chip} px-3 py-1 text-xs font-bold uppercase tracking-wider">${c.vence ? 'Hasta el ' + esc(fechaCorta(c.vence)) : 'Sin vencimiento'}</span>
+          <span class="text-5xl drop-shadow-md" aria-hidden="true">${esc(c.icono)}</span>
+        </div>
+        <p class="font-display mt-4 text-[3.4rem] leading-[.95] font-extrabold tracking-tight text-balance">${esc(c.etiqueta)}</p>
+        <h3 class="mt-3 text-xl font-bold leading-snug text-balance">${esc(c.titulo)}</h3>
+        ${c.descripcion ? `<p class="mt-1 text-sm opacity-80 line-clamp-2">${esc(c.descripcion)}</p>` : ''}
+      </div>
+      <div class="relative">
+        <span class="notch -left-[13px]"></span><span class="notch -right-[13px]"></span>
+        <div class="mx-5 border-t-2 border-dashed border-current opacity-25"></div>
+      </div>
+      <div class="relative p-5 pt-4">
+        ${c.condiciones ? `<p class="mb-3 text-xs opacity-75 line-clamp-2">${esc(c.condiciones)}</p>` : ''}
+        ${accion}
+      </div>
+    </article>
+  </div>`;
+}
+
+function pintarTodo(){
+  const disp = cupones.filter(c => !(mios[c.id] && mios[c.id].estado === 'usado')).length;
+  $('contador').textContent = cupones.length ? (email ? `${disp} de ${cupones.length} disponibles` : `${cupones.length} cupones`) : '';
+  const idx = swiper ? swiper.activeIndex : 0;
+  $('slides').innerHTML = cupones.length ? cupones.map(tarjeta).join('')
+    : `<div class="swiper-slide"><div class="grid h-[25.5rem] place-items-center rounded-[28px] bg-white p-8 text-center dark:bg-espresso-800"><div><p class="text-5xl">🫖</p><p class="mt-3 font-bold">No hay cupones activos</p><p class="text-sm text-stone-500">Volvé pronto, siempre sumamos nuevos.</p></div></div></div>`;
+  if(swiper){ swiper.update(); swiper.slideTo(Math.min(idx, cupones.length - 1), 0); }
+  else swiper = new Swiper('#swiper', {
+    effect: 'cards', grabCursor: true, cardsEffect: {perSlideOffset: 9, perSlideRotate: 3, slideShadows: false},
+    pagination: {el: '.cupones .swiper-pagination', clickable: true},
+    a11y: {prevSlideMessage: 'Cupón anterior', nextSlideMessage: 'Cupón siguiente', paginationBulletMessage: 'Ir al cupón {{index}}'},
+    keyboard: {enabled: true},
+  });
+
+  // Mis códigos
+  const lista = cupones.filter(c => mios[c.id]);
+  $('mis').classList.toggle('hidden', !lista.length);
+  $('mis-list').innerHTML = lista.map(c => {
+    const m = mios[c.id], usado = m.estado === 'usado';
+    return `<div class="swiper-slide !w-auto"><button data-ver="${c.id}" class="flex items-center gap-3 rounded-2xl bg-white py-2.5 pl-2.5 pr-4 text-left shadow-sm ring-1 ring-black/5 transition active:scale-95 dark:bg-espresso-800 dark:ring-white/10">
+      <span class="grid size-10 place-items-center rounded-xl ${tema(c).badge} text-xl">${esc(c.icono)}</span>
+      <span><span class="block font-mono text-sm font-extrabold tracking-wider ${usado ? 'line-through opacity-50' : ''}">${esc(m.codigo)}</span>
+      <span class="block text-xs ${usado ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-stone-500 dark:text-stone-400'}">${usado ? 'Usado' : esc(c.etiqueta)}</span></span></button></div>`;
+  }).join('');
+  if(lista.length){ if(swiperMis) swiperMis.update(); else swiperMis = new Swiper('#swiper-mis', {slidesPerView: 'auto', spaceBetween: 10, freeMode: true}); }
+}
+
+async function cargarMios(){
+  if(!email){ mios = {}; return; }
+  const rows = await rpc('mis_cupones', {p_email: email});
+  mios = {}; (rows || []).forEach(r => mios[r.cupon_id] = r);
+}
+
+document.addEventListener('click', ev => {
+  const p = ev.target.closest('[data-pedir]'), v = ev.target.closest('[data-ver]');
+  if(p) pedir(+p.dataset.pedir);
+  if(v) abrir(+v.dataset.ver);
+});
+
+async function pedir(id){
+  if(!email){ pendiente = id; abrirHoja('sheet-email'); setTimeout(() => $('email').focus(), 250); return; }
+  const b = document.querySelector(`[data-pedir="${id}"]`);
+  if(b){ b.disabled = true; b.textContent = 'Generando…'; }
+  try{
+    const rows = await rpc('pedir_cupon', {p_email: email, p_cupon_id: id});
+    if(rows && rows[0]) mios[id] = {cupon_id: id, ...rows[0]};
+    pintarTodo(); abrir(id);
+  }catch(e){
+    if(b){ b.disabled = false; b.textContent = 'Obtener código'; }
+    toast(e.message);
+  }
+}
+
+// ---------- Hoja del código ----------
+function pintarHoja(){
+  const c = cupones.find(x => x.id === abierto), m = mios[abierto];
+  if(!c || !m) return;
+  $('s-badge').className = `mx-auto grid size-16 place-items-center rounded-2xl text-4xl ${tema(c).badge}`;
+  $('s-badge').textContent = c.icono;
+  $('s-title').textContent = `${c.etiqueta} · ${c.titulo}`;
+  $('s-code').textContent = m.codigo;
+  $('s-cond').textContent = c.condiciones || '';
+  const ok = m.estado === 'usado';
+  $('s-stamp').classList.toggle('hidden', !ok); $('s-stamp').classList.toggle('grid', ok);
+  $('s-status').className = 'mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold ' +
+    (ok ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-400/15 dark:text-amber-300');
+  $('s-status').querySelector('.pulse-dot').classList.toggle('hidden', ok);
+  $('s-status-t').textContent = ok ? `Confirmado el ${fecha(m.usado_en)} · ¡Que lo disfrutes!` : 'Esperando confirmación del mozo';
+  $('s-sub').textContent = ok ? 'El mozo ya aplicó tu descuento' : 'Mostrale este código al mozo';
+}
+async function abrir(id){
+  abierto = id; pintarHoja(); abrirHoja('sheet-code');
+  try{ wake = await navigator.wakeLock?.request('screen'); }catch(e){}
+  clearInterval(poll);
+  poll = setInterval(async () => {
+    if(!abierto || !mios[abierto] || mios[abierto].estado === 'usado') return;
+    try{
+      await cargarMios();
+      if(mios[abierto] && mios[abierto].estado === 'usado'){ pintarHoja(); pintarTodo(); try{ navigator.vibrate && navigator.vibrate([60,40,60]) }catch(_){} }
+    }catch(e){}
+  }, 4000);
+}
+
+// ---------- Inicio ----------
+(async function init(){
+  pintarEmail();
+  try{ cupones = await getCupones(); await cargarMios(); }
+  catch(e){ toast(e.message); }
+  pintarTodo();
+})();
+</script>
+</body>
+</html>

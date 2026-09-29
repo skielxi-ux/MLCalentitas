@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFCA00">
+<meta name="robots" content="noindex">
+<title>Panel del Mozo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11.2.10/swiper-bundle.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.3/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11.2.10/swiper-bundle.min.js"></script>
+<style type="text/tailwindcss">
+@theme {
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --color-espresso-950: #0F1C15;
+  --color-espresso-900: #16291F;
+  --color-espresso-800: #1F3B2D;
+  --color-espresso-700: #2C5240;
+  --color-crema-50: #F5F3EE;
+  --color-crema-100: #ECE8DF;
+  --color-cherry-500: #C4382F;
+  --color-mlc-yellow: #FFCA00;
+  --color-mlc-maroon: #7A2020;
+  --color-caramel-400: #E3A33B;
+}
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; overflow-x: clip; }
+  body { @apply bg-crema-50 text-stone-900 font-sans antialiased dark:bg-espresso-950 dark:text-stone-100; }
+  :focus-visible { @apply outline-3 outline-offset-2 outline-caramel-400; }
+}
+</style>
+<style>
+.tab[aria-selected="true"]{background:#7A2020;color:#FFCA00;box-shadow:0 2px 10px rgb(0 0 0 / .15)}
+.pop{animation:pop .35s cubic-bezier(.2,1.5,.4,1)}@keyframes pop{from{transform:scale(.9);opacity:0}}
+@media (prefers-reduced-motion:reduce){.pop{animation:none}}
+</style>
+</head>
+<body class="min-h-dvh overflow-x-clip">
+
+<header class="bg-mlc-yellow px-4 pt-[calc(env(safe-area-inset-top)+14px)] pb-4 text-mlc-maroon">
+  <div class="mx-auto flex max-w-md items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <img src="data:image/jpeg;base64,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" alt="MLCalentitas" class="h-12 w-auto" width="170" height="123">
+      <div>
+      <p class="font-display text-lg font-extrabold leading-tight">Panel del mozo</p></div>
+    </div>
+    <button id="salir" type="button" class="hidden rounded-xl border-2 border-mlc-maroon/30 px-3 py-1.5 text-sm font-bold">Salir</button>
+  </div>
+  <!-- Pestañas -->
+  <div id="tabs" class="mx-auto mt-4 hidden max-w-md grid-cols-2 gap-1 rounded-2xl bg-mlc-maroon/10 p-1" role="tablist">
+    <button class="tab rounded-xl py-2.5 text-sm font-bold text-mlc-maroon/70 transition" role="tab" aria-selected="true" data-tab="0">Validar código</button>
+    <button class="tab rounded-xl py-2.5 text-sm font-bold text-mlc-maroon/70 transition" role="tab" aria-selected="false" data-tab="1">Historial <span id="hoy-badge" class="ml-1 rounded-full bg-cherry-500 px-2 py-0.5 text-xs text-white">0</span></button>
+  </div>
+</header>
+
+<main class="mx-auto max-w-md px-4 pb-12 pt-5">
+  <!-- Ingreso con PIN -->
+  <form id="f-pin" class="pop rounded-3xl bg-white p-6 text-center shadow-xl shadow-espresso-900/10 ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10">
+    <div class="mx-auto grid size-16 place-items-center rounded-2xl bg-espresso-800/10 text-3xl dark:bg-white/10">🔒</div>
+    <h1 class="font-display mt-4 text-2xl font-extrabold">Ingresá el PIN del local</h1>
+    <p class="mt-1 text-sm text-stone-500 dark:text-stone-300">Lo tiene el encargado. Queda guardado en este celular.</p>
+    <label for="pin" class="sr-only">PIN</label>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="••••••"
+      class="mt-5 w-full rounded-2xl border-2 border-stone-200 bg-crema-50 py-4 text-center font-mono text-3xl font-bold tracking-[.4em] outline-none focus:border-espresso-700 dark:border-white/10 dark:bg-espresso-900 dark:focus:border-caramel-400">
+    <p id="pin-err" class="mt-3 hidden text-sm font-semibold text-cherry-500"></p>
+    <button type="submit" class="mt-4 w-full rounded-2xl bg-espresso-800 py-4 text-lg font-bold text-white transition active:scale-[.98] dark:bg-caramel-400 dark:text-espresso-950">Entrar</button>
+  </form>
+
+  <!-- Panel con pestañas deslizables -->
+  <div id="panel" class="hidden"><div id="panel-swiper" class="swiper !overflow-visible">
+    <div class="swiper-wrapper">
+      <!-- Validar -->
+      <section class="swiper-slide !h-auto">
+        <form id="f-cod" class="rounded-3xl bg-white p-5 shadow-xl shadow-espresso-900/10 ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10">
+          <label for="cod" class="text-sm font-bold uppercase tracking-wider text-stone-500 dark:text-stone-300">Código del cliente</label>
+          <input id="cod" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="ABC123"
+            class="mt-2 w-full rounded-2xl border-2 border-stone-200 bg-crema-50 py-4 text-center font-mono text-4xl font-extrabold uppercase tracking-[.22em] outline-none placeholder:text-stone-300 focus:border-espresso-700 dark:border-white/10 dark:bg-espresso-900 dark:placeholder:text-white/20 dark:focus:border-caramel-400">
+          <div id="dots" class="mt-3 flex justify-center gap-1.5"></div>
+          <button id="b-ver" type="submit" disabled class="mt-4 w-full rounded-2xl bg-espresso-800 py-4 text-lg font-bold text-white transition active:scale-[.98] disabled:opacity-40 dark:bg-caramel-400 dark:text-espresso-950">Verificar código</button>
+          <p id="cod-err" class="mt-3 hidden rounded-xl bg-cherry-500/10 px-3 py-2 text-center text-sm font-semibold text-cherry-500"></p>
+        </form>
+        <div id="res" class="mt-4 hidden"></div>
+      </section>
+
+      <!-- Historial -->
+      <section class="swiper-slide !h-auto">
+        <div class="grid grid-cols-2 gap-3">
+          <div class="rounded-3xl bg-espresso-800 p-4 text-white"><p class="text-xs font-semibold uppercase tracking-wider text-white/60">Canjes hoy</p><p id="hoy" class="font-display mt-1 text-4xl font-extrabold tabular-nums">0</p></div>
+          <div class="rounded-3xl bg-caramel-400 p-4 text-espresso-950"><p class="text-xs font-semibold uppercase tracking-wider text-espresso-950/60">Último</p><p id="ultimo" class="font-display mt-1 text-4xl font-extrabold tabular-nums">—</p></div>
+        </div>
+        <div class="mt-4 rounded-3xl bg-white p-2 shadow-sm ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10">
+          <div class="flex items-center justify-between px-3 pb-1 pt-2">
+            <h2 class="font-display text-lg font-bold">Canjes recientes</h2>
+            <button id="refrescar" type="button" class="rounded-lg px-2 py-1 text-sm font-semibold text-stone-500 dark:text-stone-300">↻ Actualizar</button>
+          </div>
+          <ul id="hist" class="divide-y divide-stone-100 dark:divide-white/10"></ul>
+        </div>
+      </section>
+    </div>
+  </div></div>
+</main>
+
+<script>
+/* ====== CONFIGURACIÓN ====== */
+const NOMBRE_LOCAL = "MLCalentitas";
+const SUPABASE_URL = "https://ulkcugdtqxuxjmsyqomy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_8tZa-AWxSmLJo729GPYmlA_tdgOTF1n";
+/* =========================== */
+
+const H = {apikey: SUPABASE_KEY, 'Content-Type': 'application/json'};
+async function rpc(fn, args){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {method:'POST', headers:H, body:JSON.stringify(args)});
+  const d = await r.json().catch(() => null);
+  if(!r.ok) throw new Error((d && d.message) || 'Sin conexión. Probá de nuevo.');
+  return d;
+}
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const hora = iso => new Date(iso).toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit', hour12:false});
+const fecha = iso => new Date(iso).toLocaleString('es-AR', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false});
+const limpio = s => s.toUpperCase().replace(/[^A-Z0-9]/g, '');
+const store = {
+  get(){ try{ return localStorage.getItem('cuponera_pin') || '' }catch(e){ return '' } },
+  set(v){ try{ v ? localStorage.setItem('cuponera_pin', v) : localStorage.removeItem('cuponera_pin') }catch(e){} }
+};
+let PIN = store.get(), actual = null, swiper = null;
+
+function show(el, on, disp = 'block'){ el.classList.toggle('hidden', !on); if(disp !== 'block') el.classList.toggle(disp, on); }
+
+function mostrar(err){
+  const dentro = !!PIN;
+  show($('f-pin'), !dentro); show($('panel'), dentro); show($('salir'), dentro); show($('tabs'), dentro, 'grid');
+  if(err){ $('pin-err').textContent = err; show($('pin-err'), true); }
+  if(dentro){
+    if(!swiper){
+      swiper = new Swiper('#panel-swiper', {autoHeight: true, spaceBetween: 24, resistanceRatio: .5});
+      swiper.on('slideChange', () => { marcarTab(swiper.activeIndex); if(swiper.activeIndex === 1) historial(); });
+    }
+    swiper.update(); historial(); $('cod').focus();
+  } else { $('pin').value = ''; $('pin').focus(); }
+}
+function marcarTab(i){ document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(+t.dataset.tab === i))); }
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => swiper && swiper.slideTo(+t.dataset.tab));
+
+$('f-pin').addEventListener('submit', async e => {
+  e.preventDefault();
+  const p = $('pin').value.trim(); if(!p) return;
+  show($('pin-err'), false);
+  try{
+    if(await rpc('mozo_login', {p_pin: p})){ PIN = p; store.set(p); mostrar(); }
+    else { $('pin-err').textContent = 'PIN incorrecto. Probá de nuevo.'; show($('pin-err'), true); $('pin').select(); }
+  }catch(err){ $('pin-err').textContent = err.message; show($('pin-err'), true); }
+});
+$('salir').onclick = () => { PIN = ''; store.set(''); reset(); mostrar(); };
+function sinPin(r){ if(r && r.error === 'PIN incorrecto'){ PIN = ''; store.set(''); mostrar('El PIN cambió. Ingresalo de nuevo.'); return true; } return false; }
+
+// Indicador de 6 caracteres
+function dots(n){ $('dots').innerHTML = Array.from({length: 6}, (_, i) => `<span class="h-1.5 w-6 rounded-full transition ${i < n ? 'bg-espresso-700 dark:bg-caramel-400' : 'bg-stone-200 dark:bg-white/10'}"></span>`).join(''); }
+dots(0);
+$('cod').addEventListener('input', () => {
+  const v = limpio($('cod').value); $('cod').value = v; dots(Math.min(v.length, 6));
+  $('b-ver').disabled = v.length < 6; show($('cod-err'), false);
+});
+
+$('f-cod').addEventListener('submit', async e => {
+  e.preventDefault();
+  const c = limpio($('cod').value); if(c.length < 6) return;
+  $('b-ver').disabled = true; $('b-ver').textContent = 'Verificando…';
+  try{
+    const r = await rpc('verificar_codigo', {p_codigo: c, p_pin: PIN});
+    if(sinPin(r)) return;
+    if(!r.ok){ show($('res'), false); $('cod-err').textContent = r.error === 'Código inexistente' ? `No existe el código ${c}. Revisalo con el cliente.` : r.error; show($('cod-err'), true); }
+    else { actual = r; pintar(r); }
+  }catch(err){ $('cod-err').textContent = err.message; show($('cod-err'), true); }
+  finally{ $('b-ver').textContent = 'Verificar código'; $('b-ver').disabled = limpio($('cod').value).length < 6; swiper && swiper.updateAutoHeight(200); }
+});
+
+function pintar(r, recien){
+  const usado = r.estado === 'usado';
+  const est = recien
+    ? {wrap:'bg-emerald-600 text-white', chip:'bg-white/20', icon:'✓', txt:'Canje confirmado', sub:'Aplicá el descuento en la cuenta'}
+    : usado
+    ? {wrap:'bg-cherry-500 text-white', chip:'bg-white/20', icon:'✕', txt:'Código ya usado', sub:`Se canjeó el ${fecha(r.usado_en)}`}
+    : {wrap:'bg-white text-stone-900 ring-2 ring-espresso-700 dark:bg-espresso-800 dark:text-white dark:ring-caramel-400', chip:'bg-emerald-100 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-300', icon:'●', txt:'Válido · sin usar', sub:'Revisá las condiciones y confirmá'};
+  $('res').innerHTML = `<div class="pop overflow-hidden rounded-3xl ${est.wrap} shadow-xl">
+    <div class="p-5">
+      <div class="flex items-center justify-between gap-2">
+        <span class="inline-flex items-center gap-1.5 rounded-full ${est.chip} px-3 py-1 text-sm font-extrabold">${est.icon} ${est.txt}</span>
+        <span class="font-mono text-sm font-bold tracking-wider opacity-70">${esc(r.codigo)}</span>
+      </div>
+      <p class="mt-1 text-sm opacity-75">${esc(est.sub)}</p>
+      <div class="mt-4 flex items-center gap-4">
+        <span class="grid size-16 shrink-0 place-items-center rounded-2xl bg-black/5 text-4xl dark:bg-white/10">${esc(r.icono || '☕')}</span>
+        <div class="min-w-0"><p class="font-display text-3xl font-extrabold leading-none">${esc(r.etiqueta)}</p><p class="mt-1 font-bold leading-snug">${esc(r.titulo)}</p></div>
+      </div>
+      ${r.condiciones ? `<p class="mt-4 rounded-2xl bg-black/5 p-3 text-sm dark:bg-white/10"><b>Condiciones:</b> ${esc(r.condiciones)}</p>` : ''}
+      <p class="mt-3 truncate text-sm opacity-70">Cliente: ${esc(r.email)}</p>
+    </div>
+    <div class="grid gap-2 p-5 pt-0">
+      ${!usado
+        ? `<button id="b-canje" type="button" class="w-full rounded-2xl bg-emerald-600 py-4 text-lg font-extrabold text-white shadow-lg shadow-emerald-600/30 transition active:scale-[.98]">Confirmar canje</button>
+           <button id="b-cancel" type="button" class="w-full rounded-2xl py-3 font-bold opacity-70">Cancelar</button>`
+        : `<button id="b-otro" type="button" class="w-full rounded-2xl bg-white py-4 text-lg font-extrabold text-stone-900 transition active:scale-[.98]">Validar otro código</button>`}
+    </div></div>`;
+  show($('res'), true);
+  swiper && swiper.updateAutoHeight(200);
+  $('res').scrollIntoView({behavior: 'smooth', block: 'nearest'});
+}
+
+$('res').addEventListener('click', async e => {
+  const id = e.target.closest('button')?.id;
+  if(id === 'b-cancel' || id === 'b-otro'){ reset(); return; }
+  if(id !== 'b-canje') return;
+  const b = $('b-canje'); b.disabled = true; b.textContent = 'Confirmando…';
+  try{
+    const r = await rpc('canjear_codigo', {p_codigo: actual.codigo, p_pin: PIN});
+    if(sinPin(r)) return;
+    if(r.recien_canjeado){ pintar({...actual, ...r}, true); historial(); try{ navigator.vibrate && navigator.vibrate(80) }catch(_){} }
+    else pintar({...actual, ...r});
+  }catch(err){ b.disabled = false; b.textContent = 'Confirmar canje'; $('cod-err').textContent = err.message; show($('cod-err'), true); }
+});
+function reset(){ show($('res'), false); $('cod').value = ''; dots(0); $('b-ver').disabled = true; actual = null; show($('cod-err'), false); swiper && swiper.updateAutoHeight(200); $('cod').focus(); }
+
+async function historial(){
+  try{
+    const r = await rpc('historial_canjes', {p_pin: PIN});
+    if(sinPin(r)) return;
+    $('hoy').textContent = r.hoy; $('hoy-badge').textContent = r.hoy;
+    $('ultimo').textContent = r.items.length ? hora(r.items[0].usado_en) : '—';
+    $('hist').innerHTML = r.items.length ? r.items.map(i => `
+      <li class="flex items-center gap-3 px-3 py-3">
+        <span class="grid size-10 shrink-0 place-items-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">✓</span>
+        <div class="min-w-0 flex-1"><p class="truncate font-bold">${esc(i.etiqueta)} · ${esc(i.titulo)}</p>
+        <p class="truncate text-xs text-stone-500 dark:text-stone-400"><span class="font-mono font-bold">${esc(i.codigo)}</span> · ${esc(i.email)}</p></div>
+        <span class="text-sm font-semibold tabular-nums text-stone-500 dark:text-stone-400">${hora(i.usado_en)}</span>
+      </li>`).join('')
+      : `<li class="px-3 py-8 text-center text-sm text-stone-500 dark:text-stone-400">Todavía no hay canjes. Cuando confirmes uno, aparece acá.</li>`;
+  }catch(e){ $('hist').innerHTML = `<li class="px-3 py-6 text-center text-sm text-cherry-500">${esc(e.message)}</li>`; }
+  swiper && swiper.updateAutoHeight(200);
+}
+$('refrescar').onclick = historial;
+
+mostrar();
+</script>
+</body>
+</html>
