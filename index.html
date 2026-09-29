@@ -586,7 +586,22 @@ function verDetalle(id, soloPintar){
 }
 
 // Cada minuto se actualiza el "Disponible ahora / Fuera de horario"
-setInterval(() => { if(sesion && cupones.length){ pintarLista(); if(detalle) verDetalle(detalle, true); if(abierto) pintarHoja(); } }, 60000);
+// Se actualiza sola: cada minuto y cada vez que el cliente vuelve a la pestaña, trae los cupones como están en el panel
+let refrescando = false;
+async function refrescarCupones(){
+  if(!sesion || refrescando || document.hidden) return;
+  refrescando = true;
+  try{
+    const nuevos = await getCupones();
+    cupones = nuevos; await cargarMios(); pintarTodo();
+    if(detalle && !cupones.find(c => c.id === detalle)) cerrar('sheet-det');
+    if(abierto) pintarHoja();
+  }catch(e){ /* sin conexión: se reintenta en la próxima vuelta */ }
+  finally{ refrescando = false; }
+}
+setInterval(refrescarCupones, 60000);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) refrescarCupones(); });
+window.addEventListener('focus', refrescarCupones);
 
 async function cargarMios(){
   if(!email){ mios = {}; return; }
