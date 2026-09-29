@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFCA00">
+<meta name="robots" content="noindex">
+<title>Panel del Encargado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700;800&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.3/dist/index.global.js"></script>
+<style type="text/tailwindcss">
+@theme {
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --color-espresso-950: #0F1C15;
+  --color-espresso-900: #16291F;
+  --color-espresso-800: #1F3B2D;
+  --color-crema-50: #F5F3EE;
+  --color-cherry-500: #C4382F;
+  --color-mlc-yellow: #FFCA00;
+  --color-mlc-maroon: #7A2020;
+}
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; overflow-x: clip; }
+  body { @apply bg-crema-50 text-stone-900 font-sans antialiased dark:bg-espresso-950 dark:text-stone-100; }
+  :focus-visible { @apply outline-3 outline-offset-2 outline-mlc-yellow; }
+}
+@layer components {
+  .field { @apply w-full rounded-2xl border-2 border-stone-200 bg-stone-50 px-4 py-3 text-base text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-mlc-maroon focus:bg-white focus:ring-4 focus:ring-mlc-yellow/40 dark:border-white/10 dark:bg-white/5 dark:text-white dark:focus:border-mlc-yellow dark:focus:bg-white/10; }
+  .lbl { @apply mb-1.5 block text-sm font-bold; }
+  .hint { @apply mt-1 text-xs text-stone-500 dark:text-stone-400; }
+  .btn-primary { @apply inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-mlc-maroon py-4 text-base font-extrabold text-mlc-yellow shadow-lg shadow-mlc-maroon/25 transition hover:brightness-110 active:scale-[.98] disabled:opacity-60; }
+  .pill { @apply rounded-full border-2 border-stone-200 bg-white px-3 py-1.5 text-sm font-bold text-stone-600 transition dark:border-white/10 dark:bg-white/5 dark:text-stone-300; }
+  .pill[aria-pressed="true"] { @apply border-mlc-maroon bg-mlc-maroon text-mlc-yellow dark:border-mlc-yellow dark:bg-mlc-yellow dark:text-mlc-maroon; }
+  .dia { @apply grid h-11 w-full place-items-center rounded-xl border-2 border-stone-200 bg-white text-sm font-extrabold text-stone-500 transition dark:border-white/10 dark:bg-white/5 dark:text-stone-400; }
+  .dia[aria-pressed="true"] { @apply border-mlc-maroon bg-mlc-maroon text-mlc-yellow dark:border-mlc-yellow dark:bg-mlc-yellow dark:text-mlc-maroon; }
+  .switch { @apply relative inline-flex h-7 w-12 shrink-0 items-center rounded-full bg-stone-300 transition dark:bg-white/15; }
+  .switch::after { content: ""; @apply absolute left-1 size-5 rounded-full bg-white shadow transition; }
+  .switch[aria-checked="true"] { @apply bg-emerald-500; }
+  .switch[aria-checked="true"]::after { @apply translate-x-5; }
+  .emoji { @apply grid size-11 place-items-center rounded-xl border-2 border-transparent bg-stone-100 text-2xl transition dark:bg-white/5; }
+  .emoji[aria-pressed="true"] { @apply border-mlc-maroon bg-mlc-yellow/30 dark:border-mlc-yellow; }
+}
+</style>
+<style>
+[hidden]{display:none!important}
+.sheet{transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+.sheet-wrap[aria-hidden="true"] .sheet{transform:translateY(105%)}
+.sheet-wrap[aria-hidden="true"]{pointer-events:none;opacity:0}
+.sheet-wrap{transition:opacity .2s}
+@media (prefers-reduced-motion:reduce){.sheet,.sheet-wrap{transition:none}}
+</style>
+</head>
+<body class="min-h-dvh overflow-x-clip">
+
+<header class="bg-mlc-yellow px-4 pt-[calc(env(safe-area-inset-top)+14px)] pb-4 text-mlc-maroon">
+  <div class="mx-auto flex max-w-2xl items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <img src="data:image/jpeg;base64,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" alt="MLCalentitas" class="h-12 w-auto" width="170" height="123">
+      <div><p class="text-[11px] font-bold uppercase tracking-[.16em] text-mlc-maroon/70">Administración</p>
+      <p class="font-display text-lg font-extrabold leading-tight">Panel del encargado</p></div>
+    </div>
+    <button id="salir" type="button" class="hidden rounded-xl border-2 border-mlc-maroon/30 px-3 py-1.5 text-sm font-bold">Salir</button>
+  </div>
+</header>
+
+<main class="mx-auto max-w-2xl px-4 pb-16 pt-5">
+  <!-- PIN -->
+  <form id="f-pin" class="mx-auto max-w-md rounded-3xl bg-white p-6 text-center shadow-xl shadow-black/5 ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10">
+    <div class="mx-auto grid size-16 place-items-center rounded-2xl bg-mlc-yellow/30 text-3xl">🗂️</div>
+    <h1 class="font-display mt-4 text-2xl font-extrabold">PIN del encargado</h1>
+    <p class="mt-1 text-sm text-stone-500 dark:text-stone-300">Es distinto del PIN de los mozos. Queda guardado en este dispositivo.</p>
+    <label for="pin" class="sr-only">PIN</label>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="••••••" class="field mt-5 text-center font-mono text-3xl font-bold tracking-[.4em]">
+    <p id="pin-err" class="mt-3 hidden text-sm font-semibold text-cherry-500"></p>
+    <button type="submit" class="btn-primary mt-4">Entrar</button>
+  </form>
+
+  <!-- Panel -->
+  <section id="panel" hidden>
+    <div class="grid grid-cols-3 gap-3">
+      <div class="rounded-3xl bg-mlc-maroon p-4 text-mlc-yellow"><p class="text-[11px] font-bold uppercase tracking-wider text-mlc-yellow/70">Activos</p><p id="k-act" class="font-display mt-1 text-3xl font-extrabold tabular-nums">0</p></div>
+      <div class="rounded-3xl bg-white p-4 ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10"><p class="text-[11px] font-bold uppercase tracking-wider text-stone-500">Pedidos</p><p id="k-ped" class="font-display mt-1 text-3xl font-extrabold tabular-nums">0</p></div>
+      <div class="rounded-3xl bg-white p-4 ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10"><p class="text-[11px] font-bold uppercase tracking-wider text-stone-500">Canjeados</p><p id="k-can" class="font-display mt-1 text-3xl font-extrabold tabular-nums">0</p></div>
+    </div>
+
+    <div class="mt-6 flex items-center justify-between gap-3">
+      <h2 class="font-display text-2xl font-extrabold">Cupones</h2>
+      <button id="nuevo" type="button" class="inline-flex items-center gap-1.5 rounded-2xl bg-mlc-maroon px-4 py-2.5 text-sm font-extrabold text-mlc-yellow shadow-lg shadow-mlc-maroon/25 transition active:scale-95">
+        <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"/></svg>Nuevo cupón
+      </button>
+    </div>
+    <p class="mt-1 text-sm text-stone-500 dark:text-stone-400">Los 3 con más pedidos aparecen arriba en la cuponera como “Cupones más pedidos”.</p>
+    <div id="lista" class="mt-4 grid grid-cols-1 gap-3"></div>
+  </section>
+</main>
+
+<!-- Editor -->
+<div id="sheet" class="sheet-wrap fixed inset-0 z-40 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center" aria-hidden="true">
+  <form id="f-cup" class="sheet max-h-[94dvh] w-full max-w-lg overflow-y-auto rounded-t-[28px] bg-white px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+24px)] sm:rounded-[28px] dark:bg-espresso-800" role="dialog" aria-modal="true" aria-labelledby="ed-title" novalidate>
+    <div class="mx-auto mb-4 h-1.5 w-10 rounded-full bg-stone-300 dark:bg-white/20 sm:hidden"></div>
+    <div class="flex items-center justify-between gap-3">
+      <h3 id="ed-title" class="font-display text-2xl font-extrabold">Nuevo cupón</h3>
+      <button type="button" data-close class="grid size-10 place-items-center rounded-xl text-stone-500 hover:bg-stone-100 dark:hover:bg-white/10" aria-label="Cerrar">
+        <svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+      </button>
+    </div>
+
+    <div class="mt-5 grid gap-5">
+      <div>
+        <label for="c-titulo" class="lbl">Título *</label>
+        <input id="c-titulo" class="field" maxlength="60" placeholder="Ej: Café + medialuna">
+      </div>
+      <div>
+        <label for="c-etiqueta" class="lbl">Descuento *</label>
+        <input id="c-etiqueta" class="field" maxlength="16" placeholder="Ej: 20% OFF">
+        <div class="mt-2 flex flex-wrap gap-1.5" id="sug-etiqueta"></div>
+      </div>
+      <div>
+        <span class="lbl">Ícono</span>
+        <div class="flex flex-wrap gap-1.5" id="emojis"></div>
+      </div>
+      <div>
+        <label for="c-desc" class="lbl">Descripción</label>
+        <input id="c-desc" class="field" maxlength="120" placeholder="Ej: Tu desayuno clásico a precio especial">
+      </div>
+      <div>
+        <label for="c-cond" class="lbl">Condiciones</label>
+        <textarea id="c-cond" class="field min-h-20" maxlength="300" placeholder="Ej: Consumo en el local. No acumulable con otras promociones."></textarea>
+        <p class="hint">Separá cada condición con un punto. Se muestran como lista.</p>
+      </div>
+
+      <!-- Días -->
+      <fieldset class="rounded-3xl bg-stone-50 p-4 dark:bg-white/5">
+        <legend class="sr-only">Días</legend>
+        <p class="lbl">¿Qué días vale?</p>
+        <div class="flex flex-wrap gap-1.5" id="presets-dias">
+          <button type="button" class="pill" data-preset="0,1,2,3,4,5,6">Todos</button>
+          <button type="button" class="pill" data-preset="1,2,3,4,5">Lun a Vie</button>
+          <button type="button" class="pill" data-preset="1,2,3">Lun a Mié</button>
+          <button type="button" class="pill" data-preset="0,6">Fin de semana</button>
+        </div>
+        <div class="mt-3 grid grid-cols-7 gap-1.5" id="dias"></div>
+      </fieldset>
+
+      <!-- Franja -->
+      <fieldset class="rounded-3xl bg-stone-50 p-4 dark:bg-white/5">
+        <legend class="sr-only">Horario</legend>
+        <div class="flex items-center justify-between gap-3">
+          <div><p class="font-bold">Solo en un horario</p><p class="hint mt-0">Ideal para las horas de menos gente.</p></div>
+          <button type="button" id="sw-franja" class="switch" role="switch" aria-checked="false" aria-label="Limitar a un horario"></button>
+        </div>
+        <div id="franja" class="mt-4 grid gap-3" hidden>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label for="c-desde" class="lbl">Desde</label><input id="c-desde" type="time" class="field" step="900"></div>
+            <div><label for="c-hasta" class="lbl">Hasta</label><input id="c-hasta" type="time" class="field" step="900"></div>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" class="pill" data-franja="07:00-11:00">Mañana 7 a 11</button>
+            <button type="button" class="pill" data-franja="15:00-18:00">Siesta 15 a 18</button>
+            <button type="button" class="pill" data-franja="16:00-19:00">Merienda 16 a 19</button>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="rounded-2xl border-2 border-dashed border-mlc-maroon/30 px-4 py-3 text-sm dark:border-mlc-yellow/30">
+        <span class="font-bold text-mlc-maroon dark:text-mlc-yellow">Los clientes van a ver:</span> <span id="resumen" class="font-semibold"></span>
+      </div>
+
+      <div>
+        <label for="c-vence" class="lbl">Vence el (opcional)</label>
+        <input id="c-vence" type="date" class="field">
+      </div>
+      <div class="grid gap-3 rounded-3xl bg-stone-50 p-4 dark:bg-white/5">
+        <div class="flex items-center justify-between gap-3">
+          <div><p class="font-bold">Activo</p><p class="hint mt-0">Si lo pausás, deja de verse en la cuponera.</p></div>
+          <button type="button" id="sw-activo" class="switch" role="switch" aria-checked="true" aria-label="Activo"></button>
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <div><p class="font-bold">Destacado</p><p class="hint mt-0">Si hay empate de pedidos, va primero en “Más pedidos”.</p></div>
+          <button type="button" id="sw-dest" class="switch" role="switch" aria-checked="false" aria-label="Destacado"></button>
+        </div>
+      </div>
+
+      <p id="ed-err" class="hidden rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 dark:bg-red-400/10 dark:text-red-300" role="alert"></p>
+      <div class="grid gap-2">
+        <button type="submit" class="btn-primary">Guardar cupón</button>
+        <div id="zona-borrar" class="grid gap-2"></div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div id="toast" class="fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+16px)] z-50 mx-auto hidden max-w-md rounded-2xl bg-stone-900 px-4 py-3 text-center text-sm font-semibold text-white shadow-2xl"></div>
+
+<script>
+const SUPABASE_URL = "https://ulkcugdtqxuxjmsyqomy.supabase.co";
+const SUPABASE_KEY = "sb_publishable_8tZa-AWxSmLJo729GPYmlA_tdgOTF1n";
+
+const H = {apikey: SUPABASE_KEY, 'Content-Type': 'application/json'};
+async function rpc(fn, args){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {method:'POST', headers:H, body:JSON.stringify(args)});
+  const d = await r.json().catch(() => null);
+  if(!r.ok) throw new Error((d && d.message) || 'Sin conexión. Probá de nuevo.');
+  return d;
+}
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(){ try{ return localStorage.getItem('cuponera_admin_pin') || '' }catch(e){ return '' } },
+  set(v){ try{ v ? localStorage.setItem('cuponera_admin_pin', v) : localStorage.removeItem('cuponera_admin_pin') }catch(e){} }
+};
+function toast(m){ const t = $('toast'); t.textContent = m; t.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 3000); }
+
+let PIN = store.get(), cupones = [], editando = null;
+const DIAS = [[1,'L','Lunes'],[2,'M','Martes'],[3,'M','Miércoles'],[4,'J','Jueves'],[5,'V','Viernes'],[6,'S','Sábado'],[0,'D','Domingo']];
+const NOMBRES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const EMOJIS = ['🥐','☕','🍰','🥤','🥪','🍊','🧁','🍩','🥯','🍪','🧃','🎉'];
+const SUGERIDOS = ['10% OFF','15% OFF','20% OFF','2x1','2do al 50%','$ 500 OFF'];
+
+// ---------- Acceso ----------
+function mostrar(err){
+  const dentro = !!PIN;
+  $('f-pin').hidden = dentro; $('panel').hidden = !dentro; $('salir').classList.toggle('hidden', !dentro);
+  if(err){ $('pin-err').textContent = err; $('pin-err').classList.remove('hidden'); }
+  if(dentro) cargar(); else { $('pin').value = ''; $('pin').focus(); }
+}
+$('f-pin').addEventListener('submit', async e => {
+  e.preventDefault();
+  const p = $('pin').value.trim(); if(!p) return;
+  $('pin-err').classList.add('hidden');
+  try{
+    if(await rpc('admin_login', {p_pin: p})){ PIN = p; store.set(p); mostrar(); }
+    else { $('pin-err').textContent = 'PIN incorrecto.'; $('pin-err').classList.remove('hidden'); $('pin').select(); }
+  }catch(err){ $('pin-err').textContent = err.message; $('pin-err').classList.remove('hidden'); }
+});
+$('salir').onclick = () => { PIN = ''; store.set(''); mostrar(); };
+function sinPin(r){ if(r && r.error === 'PIN incorrecto'){ PIN = ''; store.set(''); mostrar('El PIN cambió. Ingresalo de nuevo.'); return true; } return false; }
+
+// ---------- Lista ----------
+async function cargar(){
+  $('lista').innerHTML = '<div class="h-24 animate-pulse rounded-3xl bg-stone-200 dark:bg-white/5"></div>'.repeat(3);
+  try{
+    const r = await rpc('admin_listar', {p_pin: PIN});
+    if(sinPin(r)) return;
+    cupones = r.cupones || []; pintar();
+  }catch(e){ $('lista').innerHTML = `<p class="rounded-3xl bg-red-50 p-4 text-sm font-semibold text-red-700">${esc(e.message)}</p>`; }
+}
+function pintar(){
+  const top = [...cupones].filter(c => c.activo).sort((a, b) => b.pedidos - a.pedidos || b.destacado - a.destacado || a.orden - b.orden).slice(0, 3).map(c => c.id);
+  $('k-act').textContent = cupones.filter(c => c.activo).length;
+  $('k-ped').textContent = cupones.reduce((n, c) => n + c.pedidos, 0);
+  $('k-can').textContent = cupones.reduce((n, c) => n + c.canjes, 0);
+  $('lista').innerHTML = cupones.length ? cupones.map(c => `
+    <article class="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10 ${c.activo ? '' : 'opacity-60'}">
+      <div class="flex gap-3.5">
+        <div class="grid size-16 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-mlc-maroon to-[#5a1414] px-1 text-center font-display text-sm font-extrabold leading-tight text-mlc-yellow ${c.activo ? '' : 'grayscale'}">${esc(c.etiqueta)}</div>
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-1.5">
+            ${c.activo ? '<span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/20">Activo</span>' : '<span class="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-bold text-stone-500 ring-1 ring-stone-200 dark:bg-white/5 dark:ring-white/10">Pausado</span>'}
+            ${top.includes(c.id) ? `<span class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-bold text-cherry-500 ring-1 ring-red-200 dark:bg-red-400/10 dark:text-red-300 dark:ring-red-400/20">🔥 #${top.indexOf(c.id) + 1} más pedido</span>` : ''}
+            ${c.destacado ? '<span class="rounded-full bg-mlc-yellow/30 px-2 py-0.5 text-xs font-bold text-mlc-maroon dark:text-mlc-yellow">★ Destacado</span>' : ''}
+          </div>
+          <h3 class="mt-1 truncate font-display text-lg font-extrabold">${esc(c.icono)} ${esc(c.titulo)}</h3>
+          <p class="text-sm font-semibold text-amber-800 dark:text-amber-300">🕑 ${esc(c.horario)}${c.vence ? ` · vence ${new Date(c.vence + 'T00:00:00').toLocaleDateString('es-AR', {day:'numeric', month:'short'})}` : ''}</p>
+          <p class="mt-0.5 text-xs text-stone-500 dark:text-stone-400"><b class="tabular-nums text-stone-700 dark:text-stone-200">${c.pedidos}</b> pedidos · <b class="tabular-nums text-stone-700 dark:text-stone-200">${c.canjes}</b> canjeados</p>
+        </div>
+      </div>
+      <div class="mt-3 flex items-center gap-2 border-t border-stone-100 pt-3 dark:border-white/10">
+        <button type="button" data-editar="${c.id}" class="flex-1 rounded-xl bg-stone-100 py-2.5 text-sm font-bold transition hover:bg-stone-200 dark:bg-white/10 dark:hover:bg-white/15">Editar</button>
+        <label class="flex items-center gap-2 text-sm font-bold text-stone-600 dark:text-stone-300">${c.activo ? 'Activo' : 'Pausado'}
+          <button type="button" data-activo="${c.id}" class="switch" role="switch" aria-checked="${c.activo}" aria-label="${c.activo ? 'Pausar' : 'Activar'} ${esc(c.titulo)}"></button></label>
+      </div>
+    </article>`).join('')
+    : '<div class="rounded-3xl border-2 border-dashed border-stone-300 p-8 text-center text-stone-500">Todavía no hay cupones. Tocá “Nuevo cupón” para crear el primero.</div>';
+}
+$('lista').addEventListener('click', async e => {
+  const ed = e.target.closest('[data-editar]'), ac = e.target.closest('[data-activo]');
+  if(ed) abrirEditor(cupones.find(c => c.id === +ed.dataset.editar));
+  if(ac){
+    const c = cupones.find(x => x.id === +ac.dataset.activo); ac.disabled = true;
+    const r = await guardar({...c, activo: !c.activo});
+    if(r){ c.activo = !c.activo; pintar(); toast(c.activo ? 'Cupón activado: ya se ve en la cuponera.' : 'Cupón pausado: ya no se ve en la cuponera.'); }
+    else ac.disabled = false;
+  }
+});
+async function guardar(c){
+  try{
+    const r = await rpc('admin_guardar', {p_pin: PIN, p_cupon: c});
+    if(sinPin(r)) return null;
+    if(!r.ok){ toast(r.error); return null; }
+    return r;
+  }catch(e){ toast(e.message); return null; }
+}
+
+// ---------- Editor ----------
+let dias = new Set(), emoji = '🥐', franja = false, activo = true, dest = false;
+function horarioTexto(){
+  const d = [...dias];
+  let t;
+  if(d.length === 7 || !d.length) t = 'Todos los días';
+  else if(d.length === 2 && dias.has(0) && dias.has(6)) t = 'Fines de semana';
+  else if(d.length === 5 && [1,2,3,4,5].every(x => dias.has(x))) t = 'Lun a Vie';
+  else {
+    const o = d.sort((a, b) => (a + 6) % 7 - (b + 6) % 7), partes = [];
+    for(let i = 0; i < o.length; i++){
+      let j = i; while(j + 1 < o.length && (o[j + 1] + 6) % 7 === (o[j] + 6) % 7 + 1) j++;
+      if(j - i >= 2) partes.push(NOMBRES[o[i]] + ' a ' + NOMBRES[o[j]]);
+      else for(let k = i; k <= j; k++) partes.push(NOMBRES[o[k]]);
+      i = j;
+    }
+    t = partes.join(', ');
+  }
+  const corta = h => h.endsWith(':00') ? String(+h.slice(0, 2)) : h.replace(/^0/, '');
+  if(franja && $('c-desde').value && $('c-hasta').value) t += ` · ${corta($('c-desde').value)} a ${corta($('c-hasta').value)} h`;
+  return d.length ? t : 'Elegí al menos un día';
+}
+function pintarEditor(){
+  $('dias').innerHTML = DIAS.map(([n, l, nombre]) => `<button type="button" class="dia" data-dia="${n}" aria-pressed="${dias.has(n)}" aria-label="${nombre}" title="${nombre}">${l}</button>`).join('');
+  document.querySelectorAll('[data-preset]').forEach(b => { const p = b.dataset.preset.split(',').map(Number); b.setAttribute('aria-pressed', String(p.length === dias.size && p.every(x => dias.has(x)))); });
+  $('emojis').innerHTML = EMOJIS.map(x => `<button type="button" class="emoji" data-emoji="${x}" aria-pressed="${x === emoji}" aria-label="Ícono ${x}">${x}</button>`).join('');
+  $('sw-franja').setAttribute('aria-checked', String(franja)); $('franja').hidden = !franja;
+  document.querySelectorAll('[data-franja]').forEach(b => b.setAttribute('aria-pressed', String(franja && b.dataset.franja === `${$('c-desde').value}-${$('c-hasta').value}`)));
+  $('sw-activo').setAttribute('aria-checked', String(activo)); $('sw-dest').setAttribute('aria-checked', String(dest));
+  $('resumen').textContent = horarioTexto();
+}
+$('sug-etiqueta').innerHTML = SUGERIDOS.map(s => `<button type="button" class="pill !py-1 text-xs" data-sug="${s}">${s}</button>`).join('');
+$('f-cup').addEventListener('click', e => {
+  const t = e.target.closest('button'); if(!t) return;
+  if(t.dataset.dia !== undefined){ const n = +t.dataset.dia; dias.has(n) ? dias.delete(n) : dias.add(n); }
+  else if(t.dataset.preset){ dias = new Set(t.dataset.preset.split(',').map(Number)); }
+  else if(t.dataset.emoji){ emoji = t.dataset.emoji; }
+  else if(t.dataset.sug){ $('c-etiqueta').value = t.dataset.sug; }
+  else if(t.dataset.franja){ const [a, b] = t.dataset.franja.split('-'); $('c-desde').value = a; $('c-hasta').value = b; }
+  else if(t.id === 'sw-franja'){ franja = !franja; if(franja && !$('c-desde').value){ $('c-desde').value = '16:00'; $('c-hasta').value = '19:00'; } }
+  else if(t.id === 'sw-activo'){ activo = !activo; }
+  else if(t.id === 'sw-dest'){ dest = !dest; }
+  else if(t.id === 'b-borrar'){ $('zona-borrar').innerHTML = `<div class="rounded-2xl bg-red-50 p-4 text-center dark:bg-red-400/10"><p class="text-sm font-bold text-red-700 dark:text-red-300">¿Borrar “${esc($('c-titulo').value)}” para siempre?</p><div class="mt-3 grid grid-cols-2 gap-2"><button type="button" id="b-borrar-no" class="rounded-xl bg-white py-2.5 text-sm font-bold dark:bg-white/10">No, volver</button><button type="button" id="b-borrar-si" class="rounded-xl bg-red-600 py-2.5 text-sm font-bold text-white">Sí, borrar</button></div></div>`; return; }
+  else if(t.id === 'b-borrar-no'){ zonaBorrar(); return; }
+  else if(t.id === 'b-borrar-si'){ borrar(); return; }
+  else if(t.hasAttribute('data-close')){ cerrarEditor(); return; }
+  else return;
+  pintarEditor();
+});
+['c-desde', 'c-hasta'].forEach(id => $(id).addEventListener('input', pintarEditor));
+function zonaBorrar(){ $('zona-borrar').innerHTML = editando ? '<button type="button" id="b-borrar" class="w-full rounded-2xl py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-400/10">Borrar cupón</button>' : ''; }
+function abrirEditor(c){
+  editando = c ? c.id : null;
+  $('ed-title').textContent = c ? 'Editar cupón' : 'Nuevo cupón';
+  $('c-titulo').value = c ? c.titulo : ''; $('c-etiqueta').value = c ? c.etiqueta : '';
+  $('c-desc').value = c ? c.descripcion : ''; $('c-cond').value = c ? c.condiciones : ''; $('c-vence').value = c && c.vence ? c.vence : '';
+  dias = new Set(c && c.dias ? c.dias : [0,1,2,3,4,5,6]); emoji = c ? c.icono : '🥐';
+  franja = !!(c && c.hora_desde); $('c-desde').value = c && c.hora_desde ? c.hora_desde : ''; $('c-hasta').value = c && c.hora_hasta ? c.hora_hasta : '';
+  activo = c ? c.activo : true; dest = c ? c.destacado : false;
+  $('ed-err').classList.add('hidden'); zonaBorrar(); pintarEditor();
+  $('sheet').setAttribute('aria-hidden', 'false'); setTimeout(() => $('c-titulo').focus(), 250);
+}
+function cerrarEditor(){ $('sheet').setAttribute('aria-hidden', 'true'); editando = null; }
+$('sheet').addEventListener('click', e => { if(e.target.id === 'sheet') cerrarEditor(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') cerrarEditor(); });
+$('nuevo').onclick = () => abrirEditor(null);
+function errorEditor(m){ $('ed-err').textContent = m; $('ed-err').classList.remove('hidden'); $('ed-err').scrollIntoView({behavior: 'smooth', block: 'nearest'}); }
+
+$('f-cup').addEventListener('submit', async e => {
+  e.preventDefault();
+  const c = {
+    id: editando, titulo: $('c-titulo').value.trim(), etiqueta: $('c-etiqueta').value.trim(), icono: emoji,
+    descripcion: $('c-desc').value.trim(), condiciones: $('c-cond').value.trim(), vence: $('c-vence').value || null,
+    dias: dias.size === 7 ? null : [...dias], hora_desde: franja ? $('c-desde').value : null, hora_hasta: franja ? $('c-hasta').value : null,
+    activo, destacado: dest
+  };
+  if(!c.titulo) return errorEditor('Escribí un título para el cupón.');
+  if(!c.etiqueta) return errorEditor('Escribí el descuento, por ejemplo “20% OFF” o “2x1”.');
+  if(!dias.size) return errorEditor('Elegí al menos un día.');
+  if(franja && (!c.hora_desde || !c.hora_hasta || c.hora_desde === c.hora_hasta)) return errorEditor('Completá la franja horaria con una hora de inicio y otra de fin distintas.');
+  const eraNuevo = !editando;
+  const b = e.target.querySelector('.btn-primary'); b.disabled = true; b.textContent = 'Guardando…';
+  try{
+    const r = await rpc('admin_guardar', {p_pin: PIN, p_cupon: c});
+    if(sinPin(r)) return;
+    if(!r.ok) return errorEditor(r.error);
+    cerrarEditor(); toast(eraNuevo ? 'Cupón creado. Ya aparece en la cuponera.' : 'Cambios guardados.'); cargar();
+  }catch(err){ errorEditor(err.message); }
+  finally{ b.disabled = false; b.textContent = 'Guardar cupón'; }
+});
+async function borrar(){
+  try{
+    const r = await rpc('admin_eliminar', {p_pin: PIN, p_id: editando});
+    if(sinPin(r)) return;
+    if(!r.ok){ zonaBorrar(); return errorEditor(r.error); }
+    cerrarEditor(); toast('Cupón borrado.'); cargar();
+  }catch(err){ errorEditor(err.message); }
+}
+
+mostrar();
+</script>
+</body>
+</html>
