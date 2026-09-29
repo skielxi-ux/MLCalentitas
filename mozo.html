@@ -93,6 +93,27 @@
           <div class="rounded-3xl bg-espresso-800 p-4 text-white"><p class="text-xs font-semibold uppercase tracking-wider text-white/60">Canjes hoy</p><p id="hoy" class="font-display mt-1 text-4xl font-extrabold tabular-nums">0</p></div>
           <div class="rounded-3xl bg-caramel-400 p-4 text-espresso-950"><p class="text-xs font-semibold uppercase tracking-wider text-espresso-950/60">Último</p><p id="ultimo" class="font-display mt-1 text-4xl font-extrabold tabular-nums">—</p></div>
         </div>
+        <!-- Calendario -->
+        <div class="mt-4 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10">
+          <div class="flex items-center justify-between gap-2">
+            <button id="cal-prev" type="button" class="grid size-10 place-items-center rounded-xl bg-stone-100 text-stone-700 transition active:scale-95 dark:bg-white/10 dark:text-stone-200" aria-label="Mes anterior">
+              <svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12.8 4.2a.75.75 0 0 1 0 1.06L8.06 10l4.74 4.74a.75.75 0 1 1-1.06 1.06l-5.27-5.27a.75.75 0 0 1 0-1.06l5.27-5.27a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd"/></svg>
+            </button>
+            <div class="text-center">
+              <h2 id="cal-titulo" class="font-display text-lg font-extrabold capitalize">—</h2>
+              <p id="cal-total" class="text-sm font-semibold text-stone-500 dark:text-stone-400">&nbsp;</p>
+            </div>
+            <button id="cal-next" type="button" class="grid size-10 place-items-center rounded-xl bg-stone-100 text-stone-700 transition active:scale-95 disabled:opacity-30 dark:bg-white/10 dark:text-stone-200" aria-label="Mes siguiente">
+              <svg class="size-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M7.2 15.8a.75.75 0 0 1 0-1.06L11.94 10 7.2 5.26a.75.75 0 1 1 1.06-1.06l5.27 5.27a.75.75 0 0 1 0 1.06l-5.27 5.27a.75.75 0 0 1-1.06 0Z" clip-rule="evenodd"/></svg>
+            </button>
+          </div>
+          <div class="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-extrabold uppercase text-stone-400">
+            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+          </div>
+          <div id="cal" class="mt-1 grid grid-cols-7 gap-1" role="grid" aria-label="Canjes por día"></div>
+          <div id="cal-dia" class="mt-4 border-t border-stone-100 pt-4 dark:border-white/10"></div>
+        </div>
+
         <div class="mt-4 rounded-3xl bg-white p-2 shadow-sm ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10">
           <div class="flex items-center justify-between px-3 pb-1 pt-2">
             <h2 class="font-display text-lg font-bold">Canjes recientes</h2>
@@ -139,7 +160,7 @@ function mostrar(err){
   if(dentro){
     if(!swiper){
       swiper = new Swiper('#panel-swiper', {autoHeight: true, spaceBetween: 24, resistanceRatio: .5});
-      swiper.on('slideChange', () => { marcarTab(swiper.activeIndex); if(swiper.activeIndex === 1) historial(); });
+      swiper.on('slideChange', () => { marcarTab(swiper.activeIndex); if(swiper.activeIndex === 1){ historial(); cargarMes().then(() => verDia(cal.sel)); } });
     }
     swiper.update(); historial(); $('cod').focus();
   } else { $('pin').value = ''; $('pin').focus(); }
@@ -225,7 +246,7 @@ $('res').addEventListener('click', async e => {
   try{
     const r = await rpc('canjear_codigo', {p_codigo: actual.codigo, p_pin: PIN});
     if(sinPin(r)) return;
-    if(r.recien_canjeado){ pintar({...actual, ...r}, true); historial(); try{ navigator.vibrate && navigator.vibrate(80) }catch(_){} }
+    if(r.recien_canjeado){ pintar({...actual, ...r}, true); historial(); if(cal) cargarMes(); try{ navigator.vibrate && navigator.vibrate(80) }catch(_){} }
     else if(r.fuera_de_horario){ pintar({...actual, en_horario: false}); }
     else pintar({...actual, ...r});
   }catch(err){ b.disabled = false; b.textContent = 'Confirmar canje'; $('cod-err').textContent = err.message; show($('cod-err'), true); }
@@ -249,7 +270,83 @@ async function historial(){
   }catch(e){ $('hist').innerHTML = `<li class="px-3 py-6 text-center text-sm text-cherry-500">${esc(e.message)}</li>`; }
   swiper && swiper.updateAutoHeight(200);
 }
-$('refrescar').onclick = historial;
+$('refrescar').onclick = () => { historial(); cargarMes(); };
+
+// ---------- Calendario de canjes ----------
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const DIAS_LARGOS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const hoyAR = () => new Date().toLocaleDateString('en-CA', {timeZone: 'America/Argentina/Buenos_Aires'});
+const pad = n => String(n).padStart(2, '0');
+let cal = null;
+function iniciarCal(){ if(cal) return; const [y, m, d] = hoyAR().split('-').map(Number); cal = {anio: y, mes: m, sel: hoyAR(), dias: {}}; }
+async function cargarMes(){
+  iniciarCal();
+  $('cal-titulo').textContent = `${MESES[cal.mes - 1]} ${cal.anio}`;
+  try{
+    const r = await rpc('canjes_mes', {p_pin: PIN, p_anio: cal.anio, p_mes: cal.mes});
+    if(sinPin(r)) return;
+    cal.dias = r.dias || {};
+    $('cal-total').innerHTML = `<b class="tabular-nums text-stone-800 dark:text-stone-100">${r.total}</b> ${r.total === 1 ? 'canje' : 'canjes'} en el mes`;
+    pintarMes();
+  }catch(e){ $('cal-total').textContent = e.message; }
+}
+function pintarMes(){
+  const hoy = hoyAR(), primero = new Date(cal.anio, cal.mes - 1, 1), diasMes = new Date(cal.anio, cal.mes, 0).getDate();
+  const offset = (primero.getDay() + 6) % 7;   // lunes primero
+  const max = Math.max(1, ...Object.values(cal.dias));
+  let html = '<span></span>'.repeat(offset);
+  for(let d = 1; d <= diasMes; d++){
+    const f = `${cal.anio}-${pad(cal.mes)}-${pad(d)}`, n = cal.dias[d] || 0, futuro = f > hoy, sel = f === cal.sel, esHoy = f === hoy;
+    const nivel = n ? Math.max(1, Math.ceil(n / max * 3)) : 0;
+    const fondo = sel ? 'bg-mlc-yellow text-mlc-maroon ring-2 ring-mlc-maroon dark:ring-mlc-yellow'
+      : n ? ['', 'bg-red-50 dark:bg-red-400/10', 'bg-red-100 dark:bg-red-400/20', 'bg-red-200 dark:bg-red-400/30'][nivel]
+      : 'bg-stone-50 dark:bg-white/5';
+    html += `<button type="button" data-fecha="${f}" ${futuro ? 'disabled' : ''} aria-pressed="${sel}"
+      aria-label="${d} de ${MESES[cal.mes - 1]}: ${n} ${n === 1 ? 'canje' : 'canjes'}${esHoy ? ' (hoy)' : ''}"
+      class="relative flex aspect-square flex-col items-center justify-center rounded-xl text-sm font-bold transition active:scale-95 disabled:opacity-30 ${fondo} ${esHoy && !sel ? 'ring-2 ring-espresso-700 dark:ring-caramel-400' : ''}">
+      <span class="${n || sel ? '' : 'text-stone-500 dark:text-stone-400'}">${d}</span>
+      ${n ? `<span class="mt-0.5 min-w-5 rounded-full ${sel ? 'bg-mlc-maroon text-mlc-yellow' : 'bg-mlc-maroon text-white'} px-1 text-[10px] font-extrabold leading-4 tabular-nums">${n}</span>` : '<span class="mt-0.5 h-4"></span>'}
+    </button>`;
+  }
+  $('cal').innerHTML = html;
+  const [hy, hm] = hoy.split('-').map(Number);
+  $('cal-next').disabled = cal.anio > hy || (cal.anio === hy && cal.mes >= hm);
+  swiper && swiper.updateAutoHeight(200);
+}
+async function verDia(f){
+  cal.sel = f; pintarMes();
+  const [y, m, d] = f.split('-').map(Number), dow = new Date(y, m - 1, d).getDay();
+  const titulo = `${f === hoyAR() ? 'Hoy, ' : ''}${DIAS_LARGOS[dow]} ${d} de ${MESES[m - 1]}`;
+  $('cal-dia').innerHTML = `<p class="text-center text-sm text-stone-500">Cargando…</p>`;
+  try{
+    const r = await rpc('canjes_dia', {p_pin: PIN, p_fecha: f});
+    if(sinPin(r)) return;
+    const n = r.items.length;
+    $('cal-dia').innerHTML = `
+      <div class="flex items-baseline justify-between gap-2">
+        <h3 class="font-display text-base font-extrabold first-letter:uppercase">${titulo}</h3>
+        <p class="shrink-0 font-display text-2xl font-extrabold tabular-nums">${n} <span class="font-sans text-sm font-semibold text-stone-500">${n === 1 ? 'canje' : 'canjes'}</span></p>
+      </div>
+      ${n ? `<div class="mt-2 flex flex-wrap gap-1.5">${r.por_cupon.map(x => `<span class="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-bold dark:bg-white/10">${esc(x.etiqueta)} · ${esc(x.titulo)} <b class="text-mlc-maroon dark:text-mlc-yellow">×${x.n}</b></span>`).join('')}</div>
+        <ul class="mt-3 divide-y divide-stone-100 dark:divide-white/10">${r.items.map(i => `
+          <li class="flex items-center gap-3 py-2.5">
+            <span class="w-12 shrink-0 font-mono text-sm font-bold tabular-nums text-stone-500 dark:text-stone-400">${hora(i.usado_en)}</span>
+            <div class="min-w-0 flex-1"><p class="truncate text-sm font-bold">${esc(i.icono || '')} ${esc(i.titulo)}</p>
+            <p class="truncate text-xs text-stone-500 dark:text-stone-400"><span class="font-mono font-bold">${esc(i.codigo)}</span> · ${esc(i.email)}</p></div>
+          </li>`).join('')}</ul>`
+      : `<p class="mt-2 text-sm text-stone-500 dark:text-stone-400">Ese día no se canjeó ningún cupón.</p>`}`;
+  }catch(e){ $('cal-dia').innerHTML = `<p class="text-sm font-semibold text-cherry-500">${esc(e.message)}</p>`; }
+  swiper && swiper.updateAutoHeight(200);
+}
+$('cal').addEventListener('click', e => { const b = e.target.closest('[data-fecha]'); if(b && !b.disabled) verDia(b.dataset.fecha); });
+function moverMes(k){
+  let m = cal.mes + k, y = cal.anio; if(m < 1){ m = 12; y--; } if(m > 12){ m = 1; y++; }
+  cal.anio = y; cal.mes = m;
+  const hoy = hoyAR(); cal.sel = hoy.startsWith(`${y}-${pad(m)}`) ? hoy : `${y}-${pad(m)}-01`;
+  cargarMes().then(() => verDia(cal.sel));
+}
+$('cal-prev').onclick = () => moverMes(-1);
+$('cal-next').onclick = () => moverMes(1);
 
 mostrar();
 </script>
