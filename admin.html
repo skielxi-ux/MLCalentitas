@@ -90,7 +90,7 @@
   <!-- Panel -->
   <section id="panel" hidden>
     <div class="grid grid-cols-3 gap-3">
-      <div class="rounded-3xl bg-mlc-maroon p-4 text-mlc-yellow"><p class="text-[11px] font-bold uppercase tracking-wider text-mlc-yellow/70">Activos</p><p id="k-act" class="font-display mt-1 text-3xl font-extrabold tabular-nums">0</p></div>
+      <div class="rounded-3xl bg-mlc-maroon p-4 text-mlc-yellow"><p class="text-[11px] font-bold uppercase tracking-wider text-mlc-yellow/70">Visibles</p><p id="k-act" class="font-display mt-1 text-3xl font-extrabold tabular-nums">0</p></div>
       <div class="rounded-3xl bg-white p-4 ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10"><p class="text-[11px] font-bold uppercase tracking-wider text-stone-500">Pedidos</p><p id="k-ped" class="font-display mt-1 text-3xl font-extrabold tabular-nums">0</p></div>
       <div class="rounded-3xl bg-white p-4 ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10"><p class="text-[11px] font-bold uppercase tracking-wider text-stone-500">Canjeados</p><p id="k-can" class="font-display mt-1 text-3xl font-extrabold tabular-nums">0</p></div>
     </div>
@@ -129,7 +129,7 @@
         <svg class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10.75 4.75a.75.75 0 0 0-1.5 0v4.5h-4.5a.75.75 0 0 0 0 1.5h4.5v4.5a.75.75 0 0 0 1.5 0v-4.5h4.5a.75.75 0 0 0 0-1.5h-4.5v-4.5Z"/></svg>Nuevo cupón
       </button>
     </div>
-    <p class="mt-1 text-sm text-stone-500 dark:text-stone-400">Los 3 con más pedidos aparecen arriba en la cuponera como “Cupones más pedidos”.</p>
+    <p class="mt-1 text-sm text-stone-500 dark:text-stone-400">Ordenados igual que los ve el cliente en la cuponera.</p>
     <div id="lista" class="mt-4 grid grid-cols-1 gap-3"></div>
   </section>
 </main>
@@ -306,7 +306,7 @@ async function cargarKpis(){
 }
 function delta(act, ant, unidad){
   if(act === null || act === undefined) return '<span class="text-xs font-semibold text-stone-400">sin datos aún</span>';
-  if(ant === null || ant === undefined) return '<span class="text-xs font-semibold text-stone-400">sin datos para comparar</span>';
+  if(ant === null || ant === undefined) return '<span class="text-xs font-semibold text-stone-400">Sin datos para comparar</span>';
   const d = Math.round((act - ant) * 10) / 10;
   if(d === 0) return `<span class="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 text-xs font-extrabold text-stone-600 dark:bg-white/10 dark:text-stone-300">= igual</span>`;
   const sube = d > 0, txt = (sube ? '+' : '−') + Math.abs(d).toLocaleString('es-AR') + (unidad || '');
@@ -315,16 +315,17 @@ function delta(act, ant, unidad){
 function pintarSemana(){
   const a = kpis.semanas.actual, b = kpis.semanas.anterior;
   const fila = (titulo, ayuda, val, d, prev) => `
-    <div class="flex items-center gap-3 rounded-2xl bg-stone-50 px-4 py-3 dark:bg-white/5">
-      <div class="min-w-0 flex-1"><p class="font-bold">${titulo}</p><p class="text-xs text-stone-500 dark:text-stone-400">${ayuda}</p></div>
-      <div class="text-right"><p class="font-display text-2xl font-extrabold tabular-nums leading-none">${val}</p>
-      <div class="mt-1 flex items-center justify-end gap-1.5">${d}<span class="text-[11px] text-stone-400 tabular-nums">antes ${prev}</span></div></div>
+    <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 rounded-2xl bg-stone-50 px-4 py-3 dark:bg-white/5">
+      <p class="font-bold">${titulo}</p>
+      <p class="text-right font-display text-2xl font-extrabold tabular-nums leading-none">${val}</p>
+      <p class="col-span-2 text-xs text-stone-500 dark:text-stone-400">${ayuda}</p>
+      <div class="col-span-2 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">${d}<span class="text-xs text-stone-400 tabular-nums">Semana anterior: ${prev}</span></div>
     </div>`;
   const pct = v => v === null || v === undefined ? '—' : v.toLocaleString('es-AR') + '%';
   $('sem').innerHTML =
     fila('Canjes', 'Cupones usados en el local', a.canjes, delta(a.canjes, b.canjes), b.canjes) +
     fila('Clientes nuevos', 'Cuentas creadas', a.clientes_nuevos, delta(a.clientes_nuevos, b.clientes_nuevos), b.clientes_nuevos) +
-    fila('Tasa de canje', `De ${a.pedidos} códigos pedidos, ${a.pedidos_usados} se usaron`, pct(a.tasa), delta(a.tasa, b.tasa, ' pts'), pct(b.tasa));
+    fila('Tasa de canje', `De ${a.pedidos} ${a.pedidos === 1 ? 'código pedido' : 'códigos pedidos'}, ${a.pedidos_usados} ${a.pedidos_usados === 1 ? 'se usó' : 'se usaron'}`, pct(a.tasa), delta(a.tasa, b.tasa, ' pts'), pct(b.tasa));
 }
 // Celdas con promo: unión de las franjas horarias de los cupones activos
 function celdasPromo(){
@@ -386,25 +387,31 @@ async function cargar(){
     cupones = r.cupones || []; pintar(); cargarKpis();
   }catch(e){ $('lista').innerHTML = `<p class="rounded-3xl bg-red-50 p-4 text-sm font-semibold text-red-700">${esc(e.message)}</p>`; }
 }
-function pintar(){
-  const top = [...cupones].filter(c => c.activo).sort((a, b) => b.pedidos - a.pedidos || b.destacado - a.destacado || a.orden - b.orden).slice(0, 3).map(c => c.id);
-  $('k-act').textContent = cupones.filter(c => c.activo).length;
-  $('k-ped').textContent = cupones.reduce((n, c) => n + c.pedidos, 0);
-  $('k-can').textContent = cupones.reduce((n, c) => n + c.canjes, 0);
-  if(kpis) pintarCalor();
-  $('lista').innerHTML = cupones.length ? cupones.map(c => `
-    <article class="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10 ${c.activo ? '' : 'opacity-60'}">
+function hoyAR(){ return new Date().toLocaleDateString('en-CA', {timeZone: 'America/Argentina/Buenos_Aires'}); }
+const vencido = c => !!c.vence && c.vence < hoyAR();
+// Mismo criterio que la cuponera: visibles = activos y no vencidos; arriba los 3 con más pedidos (desempata "destacado", después el orden)
+function secciones(){
+  const vis = cupones.filter(c => c.activo && !vencido(c));
+  const top = [...vis].sort((a, b) => b.pedidos - a.pedidos || b.destacado - a.destacado || a.orden - b.orden || a.id - b.id).slice(0, 3);
+  return {top, resto: vis.filter(c => !top.includes(c)), ocultos: cupones.filter(c => !vis.includes(c))};
+}
+function tarjetaAdmin(c, puesto){
+  const oculto = !c.activo || vencido(c);
+  return `
+    <article class="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-black/5 dark:bg-espresso-800 dark:ring-white/10 ${oculto ? 'opacity-60' : ''}">
       <div class="flex gap-3.5">
-        <div class="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-mlc-maroon to-[#5a1414] px-1 text-center font-display text-sm font-extrabold leading-tight text-mlc-yellow ${c.activo ? '' : 'grayscale'}">
+        <div class="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-gradient-to-br from-mlc-maroon to-[#5a1414] px-1 text-center font-display text-sm font-extrabold leading-tight text-mlc-yellow ${oculto ? 'grayscale' : ''}">
           ${c.foto ? `<img src="${esc(c.foto.replace('w=900', 'w=200'))}" alt="" loading="lazy" class="absolute inset-0 size-full object-cover"><span class="absolute inset-0 bg-black/45"></span>` : ''}<span class="relative ${c.foto ? 'text-white' : ''}">${esc(c.etiqueta)}</span></div>
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-1.5">
-            ${c.activo ? '<span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/20">Activo</span>' : '<span class="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-bold text-stone-500 ring-1 ring-stone-200 dark:bg-white/5 dark:ring-white/10">Pausado</span>'}
-            ${top.includes(c.id) ? `<span class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-bold text-cherry-500 ring-1 ring-red-200 dark:bg-red-400/10 dark:text-red-300 dark:ring-red-400/20">🔥 #${top.indexOf(c.id) + 1} más pedido</span>` : ''}
+            ${!c.activo ? '<span class="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-bold text-stone-500 ring-1 ring-stone-200 dark:bg-white/5 dark:ring-white/10">Pausado</span>'
+              : vencido(c) ? '<span class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-bold text-red-700 ring-1 ring-red-200 dark:bg-red-400/10 dark:text-red-300 dark:ring-red-400/20">Vencido</span>'
+              : '<span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-400/10 dark:text-emerald-300 dark:ring-emerald-400/20">Visible</span>'}
+            ${puesto ? `<span class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-bold text-cherry-500 ring-1 ring-red-200 dark:bg-red-400/10 dark:text-red-300 dark:ring-red-400/20">🔥 #${puesto} más pedido</span>` : ''}
             ${c.destacado ? '<span class="rounded-full bg-mlc-yellow/30 px-2 py-0.5 text-xs font-bold text-mlc-maroon dark:text-mlc-yellow">★ Destacado</span>' : ''}
           </div>
           <h3 class="mt-1 truncate font-display text-lg font-extrabold">${esc(c.icono)} ${esc(c.titulo)}</h3>
-          <p class="text-sm font-semibold text-amber-800 dark:text-amber-300">🕑 ${esc(c.horario)}${c.vence ? ` · vence ${new Date(c.vence + 'T00:00:00').toLocaleDateString('es-AR', {day:'numeric', month:'short'})}` : ''}</p>
+          <p class="text-sm font-semibold text-amber-800 dark:text-amber-300">🕑 ${esc(c.horario)}${c.vence ? ` · ${vencido(c) ? 'venció' : 'vence'} ${new Date(c.vence + 'T00:00:00').toLocaleDateString('es-AR', {day:'numeric', month:'short'})}` : ''}</p>
           <p class="mt-0.5 text-xs text-stone-500 dark:text-stone-400"><b class="tabular-nums text-stone-700 dark:text-stone-200">${c.pedidos}</b> pedidos · <b class="tabular-nums text-stone-700 dark:text-stone-200">${c.canjes}</b> canjeados</p>
         </div>
       </div>
@@ -413,8 +420,22 @@ function pintar(){
         <label class="flex items-center gap-2 text-sm font-bold text-stone-600 dark:text-stone-300">${c.activo ? 'Activo' : 'Pausado'}
           <button type="button" data-activo="${c.id}" class="switch" role="switch" aria-checked="${c.activo}" aria-label="${c.activo ? 'Pausar' : 'Activar'} ${esc(c.titulo)}"></button></label>
       </div>
-    </article>`).join('')
-    : '<div class="rounded-3xl border-2 border-dashed border-stone-300 p-8 text-center text-stone-500">Todavía no hay cupones. Tocá “Nuevo cupón” para crear el primero.</div>';
+    </article>`;
+}
+function encabezado(titulo, ayuda, n){
+  return `<div class="mt-3 flex items-baseline justify-between gap-2 first:mt-0"><div><h3 class="font-display text-base font-extrabold">${titulo}</h3><p class="text-xs text-stone-500 dark:text-stone-400">${ayuda}</p></div><span class="shrink-0 rounded-full bg-stone-100 px-2 py-0.5 text-xs font-bold tabular-nums text-stone-600 dark:bg-white/10 dark:text-stone-300">${n}</span></div>`;
+}
+function pintar(){
+  const {top, resto, ocultos} = secciones();
+  $('k-act').textContent = top.length + resto.length;
+  $('k-ped').textContent = cupones.reduce((n, c) => n + c.pedidos, 0);
+  $('k-can').textContent = cupones.reduce((n, c) => n + c.canjes, 0);
+  if(kpis) pintarCalor();
+  if(!cupones.length){ $('lista').innerHTML = '<div class="rounded-3xl border-2 border-dashed border-stone-300 p-8 text-center text-stone-500">Todavía no hay cupones. Tocá “Nuevo cupón” para crear el primero.</div>'; return; }
+  $('lista').innerHTML =
+    (top.length ? encabezado('Arriba · “Cupones más pedidos”', 'El carrusel de la cuponera, en este orden', top.length) + top.map((c, i) => tarjetaAdmin(c, i + 1)).join('') : '') +
+    (resto.length ? encabezado('Abajo · “Más descuentos”', 'La lista de la cuponera, en este orden', resto.length) + resto.map(c => tarjetaAdmin(c)).join('') : '') +
+    (ocultos.length ? encabezado('No se ven en la cuponera', 'Pausados o vencidos', ocultos.length) + ocultos.map(c => tarjetaAdmin(c)).join('') : '');
 }
 $('lista').addEventListener('click', async e => {
   const ed = e.target.closest('[data-editar]'), ac = e.target.closest('[data-activo]');
